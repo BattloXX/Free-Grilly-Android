@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Free-Grilly</string>
+
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_library">Library</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_setup">Set up device</string>
+    <string name="step_ap_connect_title">Connect to grill</string>
+    <string name="step_ap_connect_desc">Connect your smartphone to the grill\'s Wi-Fi network (FreeGrilly_xxxxxxxx), then return here.</string>
+    <string name="connected_continue">Connected – continue</string>
+    <string name="use_demo_mode">Use demo mode</string>
+    <string name="scanning_wifi">Scanning Wi-Fi networks…</string>
+    <string name="step_credentials_title">Configure Wi-Fi</string>
+    <string name="password">Password</string>
+    <string name="grill_name">Grill name</string>
+    <string name="configure_device">Configure device</string>
+    <string name="provisioning">Configuring…</string>
+    <string name="discovering_device">Looking for device on network…</string>
+    <string name="connecting">Connecting…</string>
+
+    <!-- Dashboard -->
+    <string name="disconnected">Disconnected</string>
+    <string name="retry">Retry</string>
+    <string name="add_device">Add device</string>
+    <string name="alarm_ready">Ready</string>
+
+    <!-- ProbeDetail -->
+    <string name="temperature_history">Temperature history</string>
+    <string name="edit_target">Edit target</string>
+    <string name="assign_food">Assign food</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Library -->
+    <string name="meat_library">Food Library</string>
+    <string name="search">Search</string>
+    <string name="all">All</string>
+    <string name="assign">Assign</string>
+
+    <!-- History -->
+    <string name="history_coming_soon">Session history coming soon</string>
+
+    <!-- Settings -->
+    <string name="settings_unit">Temperature unit</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_device">Device</string>
+    <string name="lang_system">System</string>
+    <string name="demo_mode_active">Demo mode active</string>
+    <string name="exit_demo_mode">Exit demo</string>
+    <string name="add_new_device">Add new device</string>
+    <string name="demo_mode">Demo mode</string>
+</resources>

@@ -1,0 +1,209 @@
+[
+  {
+    "id": "beef_steak",
+    "name_de": "Rindersteak",
+    "name_en": "Beef Steak",
+    "category": "beef",
+    "icon": "🥩",
+    "doneness": [
+      { "level_de": "Rare (Blutig)", "level_en": "Rare", "target_c": 52, "min_c": 49 },
+      { "level_de": "Medium Rare", "level_en": "Medium Rare", "target_c": 57, "min_c": 54 },
+      { "level_de": "Medium", "level_en": "Medium", "target_c": 63, "min_c": 60 },
+      { "level_de": "Medium Well", "level_en": "Medium Well", "target_c": 68, "min_c": 65 },
+      { "level_de": "Well Done", "level_en": "Well Done", "target_c": 74 }
+    ]
+  },
+  {
+    "id": "beef_brisket",
+    "name_de": "Rinderbrust (Brisket)",
+    "name_en": "Beef Brisket",
+    "category": "beef",
+    "icon": "🥩",
+    "recommendation": "Low & Slow bis zum Probe-Tender",
+    "doneness": [
+      { "level_de": "Fertig", "level_en": "Done", "target_c": 93, "min_c": 88 }
+    ]
+  },
+  {
+    "id": "beef_burger",
+    "name_de": "Rinderhackfleisch / Burger",
+    "name_en": "Ground Beef / Burger",
+    "category": "beef",
+    "icon": "🍔",
+    "recommendation": "Sicherheitswert: kein Pink",
+    "doneness": [
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 71 }
+    ]
+  },
+  {
+    "id": "beef_roast",
+    "name_de": "Rinderbraten",
+    "name_en": "Beef Roast",
+    "category": "beef",
+    "icon": "🥩",
+    "doneness": [
+      { "level_de": "Medium Rare", "level_en": "Medium Rare", "target_c": 57 },
+      { "level_de": "Medium", "level_en": "Medium", "target_c": 63 },
+      { "level_de": "Well Done", "level_en": "Well Done", "target_c": 74 }
+    ]
+  },
+  {
+    "id": "pork_chop",
+    "name_de": "Schweinskarree / Kotelett",
+    "name_en": "Pork Chop",
+    "category": "pork",
+    "icon": "🐷",
+    "doneness": [
+      { "level_de": "Medium (Rosa)", "level_en": "Medium (Blush)", "target_c": 63, "min_c": 60 },
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 71 }
+    ]
+  },
+  {
+    "id": "pork_ribs",
+    "name_de": "Schweinerippchen",
+    "name_en": "Pork Ribs",
+    "category": "pork",
+    "icon": "🍖",
+    "recommendation": "Low & Slow für bestes Ergebnis",
+    "doneness": [
+      { "level_de": "Fertig", "level_en": "Done", "target_c": 88, "min_c": 82 }
+    ]
+  },
+  {
+    "id": "pork_shoulder",
+    "name_de": "Schweineschulter / Pulled Pork",
+    "name_en": "Pork Shoulder / Pulled Pork",
+    "category": "pork",
+    "icon": "🍖",
+    "recommendation": "Für Pulled Pork bis ~95°C",
+    "doneness": [
+      { "level_de": "Sliceable", "level_en": "Sliceable", "target_c": 85 },
+      { "level_de": "Pulled Pork", "level_en": "Pulled Pork", "target_c": 95, "min_c": 90 }
+    ]
+  },
+  {
+    "id": "pork_tenderloin",
+    "name_de": "Schweinefilet",
+    "name_en": "Pork Tenderloin",
+    "category": "pork",
+    "icon": "🐷",
+    "doneness": [
+      { "level_de": "Medium Rosa", "level_en": "Medium Blush", "target_c": 63 },
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 71 }
+    ]
+  },
+  {
+    "id": "chicken_breast",
+    "name_de": "Hähnchenbrust",
+    "name_en": "Chicken Breast",
+    "category": "poultry",
+    "icon": "🐔",
+    "recommendation": "Lebensmittelsicherheit: mind. 74°C",
+    "doneness": [
+      { "level_de": "Sicher (saftig)", "level_en": "Safe (juicy)", "target_c": 74, "min_c": 71 },
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 80 }
+    ]
+  },
+  {
+    "id": "chicken_whole",
+    "name_de": "Ganzes Hähnchen",
+    "name_en": "Whole Chicken",
+    "category": "poultry",
+    "icon": "🐔",
+    "recommendation": "Temperatur an der dicksten Stelle der Keule messen",
+    "doneness": [
+      { "level_de": "Fertig", "level_en": "Done", "target_c": 82 }
+    ]
+  },
+  {
+    "id": "turkey_breast",
+    "name_de": "Putenbrust",
+    "name_en": "Turkey Breast",
+    "category": "poultry",
+    "icon": "🦃",
+    "doneness": [
+      { "level_de": "Fertig", "level_en": "Done", "target_c": 74 }
+    ]
+  },
+  {
+    "id": "fish_salmon",
+    "name_de": "Lachs",
+    "name_en": "Salmon",
+    "category": "fish",
+    "icon": "🐟",
+    "doneness": [
+      { "level_de": "Medium (glasig)", "level_en": "Medium (translucent)", "target_c": 52, "min_c": 49 },
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 63 }
+    ]
+  },
+  {
+    "id": "fish_tuna",
+    "name_de": "Thunfisch",
+    "name_en": "Tuna",
+    "category": "fish",
+    "icon": "🐟",
+    "doneness": [
+      { "level_de": "Rare (innen roh)", "level_en": "Rare (raw center)", "target_c": 43 },
+      { "level_de": "Medium", "level_en": "Medium", "target_c": 52 },
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 63 }
+    ]
+  },
+  {
+    "id": "fish_whole",
+    "name_de": "Ganzer Fisch",
+    "name_en": "Whole Fish",
+    "category": "fish",
+    "icon": "🐠",
+    "doneness": [
+      { "level_de": "Fertig", "level_en": "Done", "target_c": 63 }
+    ]
+  },
+  {
+    "id": "lamb_chop",
+    "name_de": "Lammkotelett",
+    "name_en": "Lamb Chop",
+    "category": "lamb",
+    "icon": "🐑",
+    "doneness": [
+      { "level_de": "Rare", "level_en": "Rare", "target_c": 52 },
+      { "level_de": "Medium Rare", "level_en": "Medium Rare", "target_c": 57 },
+      { "level_de": "Medium", "level_en": "Medium", "target_c": 63 },
+      { "level_de": "Well Done", "level_en": "Well Done", "target_c": 71 }
+    ]
+  },
+  {
+    "id": "lamb_leg",
+    "name_de": "Lammkeule",
+    "name_en": "Leg of Lamb",
+    "category": "lamb",
+    "icon": "🐑",
+    "doneness": [
+      { "level_de": "Medium Rare", "level_en": "Medium Rare", "target_c": 57 },
+      { "level_de": "Medium", "level_en": "Medium", "target_c": 63 },
+      { "level_de": "Well Done", "level_en": "Well Done", "target_c": 74 }
+    ]
+  },
+  {
+    "id": "venison_roast",
+    "name_de": "Wildbret / Hirschbraten",
+    "name_en": "Venison Roast",
+    "category": "game",
+    "icon": "🦌",
+    "doneness": [
+      { "level_de": "Medium Rare", "level_en": "Medium Rare", "target_c": 57 },
+      { "level_de": "Medium", "level_en": "Medium", "target_c": 63 },
+      { "level_de": "Well Done", "level_en": "Well Done", "target_c": 71 }
+    ]
+  },
+  {
+    "id": "wild_boar",
+    "name_de": "Wildschwein",
+    "name_en": "Wild Boar",
+    "category": "game",
+    "icon": "🐗",
+    "recommendation": "Sicherheitshalber gut durchgegart",
+    "doneness": [
+      { "level_de": "Durchgegart", "level_en": "Well Done", "target_c": 71 }
+    ]
+  }
+]
