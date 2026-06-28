@@ -24,7 +24,7 @@ class TempUtilsTest {
         assertEquals(100, TempUtils.dBmToPercent(-40))   // 140 + (-40) = 100
         assertEquals(75, TempUtils.dBmToPercent(-65))    // 140 + (-65) = 75
         assertEquals(0, TempUtils.dBmToPercent(-150))    // clamped to 0
-        assertEquals(0, TempUtils.dBmToPercent(-100))    // 140 + (-100) = 40 → actually 40
+        assertEquals(40, TempUtils.dBmToPercent(-100))    // 140 + (-100) = 40
     }
 
     @Test
