@@ -84,6 +84,11 @@ class DeviceStore @Inject constructor(
         }
     }
 
+    suspend fun clearSelectedDevice() = dataStore.edit {
+        it.remove(KEY_SELECTED_UUID)
+        it.remove(KEY_SELECTED_IP)
+    }
+
     suspend fun setTemperatureUnit(unit: String) = dataStore.edit { it[KEY_UNIT] = unit }
     suspend fun setAppLanguage(lang: String) = dataStore.edit { it[KEY_LANGUAGE] = lang }
     suspend fun setDemoMode(enabled: Boolean) = dataStore.edit { it[KEY_DEMO_MODE] = enabled }

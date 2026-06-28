@@ -20,4 +20,11 @@ data class KnownDevice(
     val ip: String,
     val mdnsHostname: String,
     val lastSeen: Long = 0L,
-)
+    /** Populated from /api/info capabilities array. Empty = unknown/original firmware. */
+    val capabilities: List<String> = emptyList(),
+    val firmwareVersion: String = "",
+) {
+    val isOriginalFirmware: Boolean get() = capabilities.isEmpty() && firmwareVersion.isNotEmpty()
+    val supportsHistory: Boolean get() = capabilities.isEmpty() || "history" in capabilities
+    val supportsAlarmMute: Boolean get() = capabilities.isEmpty() || "alarm_mute" in capabilities
+}

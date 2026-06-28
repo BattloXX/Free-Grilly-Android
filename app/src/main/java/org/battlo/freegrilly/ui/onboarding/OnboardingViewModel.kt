@@ -59,7 +59,7 @@ class OnboardingViewModel @Inject constructor(
         if (networks.isNotEmpty()) {
             _step.value = OnboardingStep.Credentials(networks)
         } else {
-            _error.value = "Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-AP verbunden bist."
+            _error.value = "Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-AP (FreeGrilly_xxxxxxxx) oder dem Grilleye-AP (Grilleye_xxxxxxxx) verbunden bist."
             _step.value = OnboardingStep.ApConnect
         }
     }
@@ -89,21 +89,25 @@ class OnboardingViewModel @Inject constructor(
     }
 
     private fun discoverDevice() {
-        nsdDiscovery.startDiscovery()
+        nsdDiscovery.startDiscovery(includeOriginal = true)
         viewModelScope.launch {
             nsdDiscovery.state.collect { state ->
                 when (state) {
                     is DiscoveryState.Found -> {
+                        baseUrlInterceptor.currentHost.value = state.ip
+                        // Fetch full device info to capture capabilities + firmware version.
+                        val info = runCatching { api.getInfo() }.getOrNull()
                         val device = KnownDevice(
-                            uuid = state.uuid.ifEmpty { state.ip },
-                            name = state.name,
+                            uuid = info?.uuid ?: state.uuid.ifEmpty { state.ip },
+                            name = info?.name?.ifBlank { state.name } ?: state.name,
                             ip = state.ip,
-                            mdnsHostname = state.name,
+                            mdnsHostname = info?.mdnsHostname ?: state.name,
                             lastSeen = System.currentTimeMillis(),
+                            capabilities = info?.capabilities ?: emptyList(),
+                            firmwareVersion = info?.firmware ?: "",
                         )
                         deviceStore.saveKnownDevice(device)
                         deviceStore.setSelectedDevice(device)
-                        baseUrlInterceptor.currentHost.value = state.ip
                         nsdDiscovery.stopDiscovery()
                         _step.value = OnboardingStep.Complete
                     }

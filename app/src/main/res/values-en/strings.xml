@@ -11,7 +11,7 @@
     <!-- Onboarding -->
     <string name="onboarding_setup">Set up device</string>
     <string name="step_ap_connect_title">Connect to grill</string>
-    <string name="step_ap_connect_desc">Connect your smartphone to the grill\'s Wi-Fi network (FreeGrilly_xxxxxxxx), then return here.</string>
+    <string name="step_ap_connect_desc">Connect your smartphone to the grill\'s Wi-Fi network (FreeGrilly_xxxxxxxx or Grilleye_xxxxxxxx), then return here.</string>
     <string name="connected_continue">Connected – continue</string>
     <string name="use_demo_mode">Use demo mode</string>
     <string name="scanning_wifi">Scanning Wi-Fi networks…</string>
@@ -54,4 +54,17 @@
     <string name="exit_demo_mode">Exit demo</string>
     <string name="add_new_device">Add new device</string>
     <string name="demo_mode">Demo mode</string>
+
+    <!-- Device Selector -->
+    <string name="select_device_title">Select grill</string>
+    <string name="connect">Connect</string>
+    <string name="scanning_network">Scanning for grills on network…</string>
+    <string name="connection_failed">Connection failed</string>
+    <string name="ok">OK</string>
+    <string name="remove">Remove</string>
+    <string name="remove_device_confirm_title">Remove device?</string>
+    <string name="remove_device_confirm_body">%1$s will be removed from the list. You can set it up again at any time.</string>
+    <string name="last_seen">Last seen: %1$s</string>
+    <string name="manual_ip_title">Enter IP address</string>
+    <string name="manual_ip_hint">Connect directly using your grill\'s IP address.</string>
 </resources>

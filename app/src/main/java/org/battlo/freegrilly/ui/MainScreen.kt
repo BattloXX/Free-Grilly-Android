@@ -10,6 +10,7 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import org.battlo.freegrilly.ui.components.AdaptiveScaffold
 import org.battlo.freegrilly.ui.dashboard.DashboardScreen
+import org.battlo.freegrilly.ui.devices.DeviceSelectorScreen
 import org.battlo.freegrilly.ui.history.SessionHistoryScreen
 import org.battlo.freegrilly.ui.library.MeatLibraryScreen
 import org.battlo.freegrilly.ui.onboarding.OnboardingScreen
@@ -18,6 +19,7 @@ import org.battlo.freegrilly.ui.settings.SettingsScreen
 
 sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
+    object DeviceSelector : Screen("device_selector")
     object Dashboard : Screen("dashboard")
     object ProbeDetail : Screen("probe/{probeId}") {
         fun createRoute(probeId: Int) = "probe/$probeId"
@@ -47,7 +49,8 @@ fun MainScreen(
     val currentBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStack?.destination?.route
 
-    val isOnboarding = currentRoute?.startsWith("onboarding") == true
+    val isOnboarding = currentRoute?.startsWith("onboarding") == true ||
+            currentRoute?.startsWith("device_selector") == true
 
     val navigate: (String) -> Unit = { route ->
         navController.navigate(route) {
@@ -69,6 +72,18 @@ fun MainScreen(
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 })
+            }
+            composable(Screen.DeviceSelector.route) {
+                DeviceSelectorScreen(
+                    onDeviceConnected = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.DeviceSelector.route) { inclusive = true }
+                        }
+                    },
+                    onAddNewDevice = {
+                        navController.navigate(Screen.Onboarding.route)
+                    },
+                )
             }
             composable(Screen.Dashboard.route) {
                 DashboardScreen(

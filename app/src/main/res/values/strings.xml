@@ -11,7 +11,7 @@
     <!-- Onboarding -->
     <string name="onboarding_setup">Gerät einrichten</string>
     <string name="step_ap_connect_title">Mit Griller verbinden</string>
-    <string name="step_ap_connect_desc">Verbinde dein Smartphone mit dem WLAN-Netzwerk deines Grillers (FreeGrilly_xxxxxxxx) und kehre dann hierher zurück.</string>
+    <string name="step_ap_connect_desc">Verbinde dein Smartphone mit dem WLAN-Netzwerk deines Grillers (FreeGrilly_xxxxxxxx oder Grilleye_xxxxxxxx) und kehre dann hierher zurück.</string>
     <string name="connected_continue">Verbunden – weiter</string>
     <string name="use_demo_mode">Demo-Modus verwenden</string>
     <string name="scanning_wifi">Suche WLAN-Netzwerke …</string>
@@ -54,4 +54,17 @@
     <string name="exit_demo_mode">Demo verlassen</string>
     <string name="add_new_device">Neues Gerät hinzufügen</string>
     <string name="demo_mode">Demo-Modus</string>
+
+    <!-- Device Selector -->
+    <string name="select_device_title">Griller auswählen</string>
+    <string name="connect">Verbinden</string>
+    <string name="scanning_network">Suche Griller im Netzwerk …</string>
+    <string name="connection_failed">Verbindung fehlgeschlagen</string>
+    <string name="ok">OK</string>
+    <string name="remove">Entfernen</string>
+    <string name="remove_device_confirm_title">Gerät entfernen?</string>
+    <string name="remove_device_confirm_body">%1$s wird aus der Liste entfernt. Du kannst ihn jederzeit neu einrichten.</string>
+    <string name="last_seen">Zuletzt: %1$s</string>
+    <string name="manual_ip_title">IP-Adresse eingeben</string>
+    <string name="manual_ip_hint">Verbinde dich direkt über die IP-Adresse deines Grillers.</string>
 </resources>

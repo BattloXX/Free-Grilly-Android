@@ -19,6 +19,14 @@ class GrillyRepository @Inject constructor(
     private val historyBuffers = mutableMapOf<Int, ArrayDeque<Float>>()
     private val bufferCapacity = 600
 
+    // Populated from /api/info after connecting. Empty = unknown (original firmware).
+    var activeCapabilities: Set<String> = emptySet()
+        private set
+
+    fun setCapabilities(caps: List<String>) {
+        activeCapabilities = caps.toSet()
+    }
+
     private val _statusFlow = MutableStateFlow<GrillyUiState>(GrillyUiState.Loading)
     val statusFlow: StateFlow<GrillyUiState> = _statusFlow.asStateFlow()
 
@@ -60,6 +68,8 @@ class GrillyRepository @Inject constructor(
     }
 
     suspend fun seedHistory() {
+        // Skip gracefully if we know the device doesn't support history.
+        if (activeCapabilities.isNotEmpty() && "history" !in activeCapabilities) return
         runCatching {
             val response = api.getHistory()
             response.probes.forEach { probe ->
@@ -84,7 +94,9 @@ class GrillyRepository @Inject constructor(
         historyBuffers[probeId]?.toList() ?: emptyList()
 
     suspend fun muteAlarm(): Result<Unit> = runCatching {
-        api.muteAlarm()
+        if (activeCapabilities.isEmpty() || "alarm_mute" in activeCapabilities) {
+            api.muteAlarm()
+        }
         alarmController.onAlarmCleared()
     }
 
