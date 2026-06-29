@@ -13,6 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
+import org.battlo.freegrilly.ui.update.UpdateSection
+import org.battlo.freegrilly.ui.update.UpdateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,10 +22,12 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
+    updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val unit by viewModel.unit.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val isDemoMode by viewModel.isDemoMode.collectAsStateWithLifecycle()
+    val updateState by updateViewModel.state.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -111,6 +115,20 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.add_new_device)) }
             }
+
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+            UpdateSection(
+                state = updateState,
+                currentVersion = updateViewModel.currentVersion,
+                onCheckUpdate = { updateViewModel.checkForUpdate() },
+                onDownload = {
+                    val info = (updateState as? org.battlo.freegrilly.ui.update.UpdateState.Available)?.info
+                    if (info != null) updateViewModel.startDownload(info)
+                },
+                onInstall = { downloadId -> updateViewModel.installUpdate(downloadId) },
+                onDismiss = { updateViewModel.dismissError() },
+            )
         }
     }
 }

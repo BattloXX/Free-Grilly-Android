@@ -18,6 +18,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "GITHUB_OWNER", "\"BattloXX\"")
+        buildConfigField("String", "GITHUB_REPO", "\"Free-Grilly-Android\"")
     }
 
     buildTypes {
@@ -30,7 +32,8 @@ android {
             )
         }
         debug {
-            applicationIdSuffix = ".debug"
+            // No applicationIdSuffix — keeps same ID as release so auto-update APK
+            // can replace the sideloaded debug build without reinstall.
             isDebuggable = true
         }
     }

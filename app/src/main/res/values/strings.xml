@@ -67,4 +67,15 @@
     <string name="last_seen">Zuletzt: %1$s</string>
     <string name="manual_ip_title">IP-Adresse eingeben</string>
     <string name="manual_ip_hint">Verbinde dich direkt über die IP-Adresse deines Grillers.</string>
+
+    <!-- Updates -->
+    <string name="settings_updates">App-Updates</string>
+    <string name="current_version">Version %1$s</string>
+    <string name="check_for_update">Update suchen</string>
+    <string name="up_to_date">App ist aktuell.</string>
+    <string name="update_available">Version %1$s verfügbar</string>
+    <string name="download_update">Herunterladen</string>
+    <string name="downloading_update">Version %1$s — %2$d %%</string>
+    <string name="ready_to_install">Version %1$s bereit</string>
+    <string name="install">Installieren</string>
 </resources>
