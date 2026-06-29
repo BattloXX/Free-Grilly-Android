@@ -76,18 +76,25 @@ class DeviceConnector @Inject constructor(
      */
     suspend fun connectByIp(ip: String): ConnectResult {
         baseUrlInterceptor.currentHost.value = ip
-        if (!tryDirectConnect(ip)) {
+        // 8 s timeout — must exceed OkHttp connectTimeout(5s). Capture the full response here so
+        // we can use legacy fields (unique_id, firmware_version) for epiecs firmware that has no
+        // /api/info endpoint.
+        val status = withTimeoutOrNull(8_000) {
+            runCatching { api.getGrillStatus() }.getOrNull()
+        }
+        if (status == null) {
             return ConnectResult(success = false, errorMessage = "Keine Verbindung zu $ip möglich.")
         }
+        // /api/info may not exist (epiecs firmware has no /api/info) — fall back to /api/grill fields
         val info = runCatching { api.getInfo() }.getOrNull()
         val device = KnownDevice(
-            uuid = info?.uuid ?: ip,
-            name = info?.name ?: "Grilleye",
+            uuid = info?.uuid?.ifBlank { status.resolvedUuid } ?: status.resolvedUuid.ifBlank { ip },
+            name = info?.name?.ifBlank { status.name } ?: status.name.ifBlank { "Grilleye" },
             ip = ip,
-            mdnsHostname = info?.mdnsHostname ?: "",
+            mdnsHostname = info?.mdnsHostname ?: status.mdnsHostname,
             lastSeen = System.currentTimeMillis(),
             capabilities = info?.capabilities ?: emptyList(),
-            firmwareVersion = info?.firmware ?: "",
+            firmwareVersion = info?.firmware?.ifBlank { status.resolvedFirmware } ?: status.resolvedFirmware,
         )
         repository.setCapabilities(device.capabilities)
         deviceStore.saveKnownDevice(device)
