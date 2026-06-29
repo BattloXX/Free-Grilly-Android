@@ -2,6 +2,8 @@ package org.battlo.freegrilly.ui.dashboard
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeviceHub
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +23,8 @@ import org.battlo.freegrilly.ui.components.ProbeCard
 fun DashboardScreen(
     onProbeClick: (Int) -> Unit,
     onNavigateToOnboarding: () -> Unit,
+    /** §8 — In-app device switch: navigate to device selector to choose a different device. */
+    onNavigateToDeviceSelector: (() -> Unit)? = null,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -68,6 +72,15 @@ fun DashboardScreen(
                 TopAppBar(
                     title = { Text(status?.name ?: "Free-Grilly Demo") },
                     actions = {
+                        // §8 — Switch device icon (only shown when multiple devices might exist)
+                        if (onNavigateToDeviceSelector != null) {
+                            IconButton(onClick = onNavigateToDeviceSelector) {
+                                Icon(
+                                    Icons.Default.DeviceHub,
+                                    contentDescription = stringResource(R.string.switch_device),
+                                )
+                            }
+                        }
                         if (status != null) {
                             BatteryBadge(
                                 batteryPercent = status.batteryPercentage,

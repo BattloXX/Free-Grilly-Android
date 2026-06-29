@@ -25,6 +25,6 @@ data class KnownDevice(
     val firmwareVersion: String = "",
 ) {
     val isOriginalFirmware: Boolean get() = capabilities.isEmpty() && firmwareVersion.isNotEmpty()
-    val supportsHistory: Boolean get() = capabilities.isEmpty() || "history" in capabilities
-    val supportsAlarmMute: Boolean get() = capabilities.isEmpty() || "alarm_mute" in capabilities
+    val supportsHistory: Boolean get() = capabilities.toSet().supports(Capabilities.HISTORY)
+    val supportsAlarmMute: Boolean get() = capabilities.toSet().supports(Capabilities.ALARM_MUTE)
 }

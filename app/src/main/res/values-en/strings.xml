@@ -55,6 +55,9 @@
     <string name="add_new_device">Add new device</string>
     <string name="demo_mode">Demo mode</string>
 
+    <!-- §8 Multi-Device -->
+    <string name="switch_device">Switch device</string>
+
     <!-- Device Selector -->
     <string name="select_device_title">Select grill</string>
     <string name="connect">Connect</string>
@@ -67,6 +70,26 @@
     <string name="last_seen">Last seen: %1$s</string>
     <string name="manual_ip_title">Enter IP address</string>
     <string name="manual_ip_hint">Connect directly using your grill\'s IP address.</string>
+
+    <!-- §8 OTA (only visible when device reports ota capability) -->
+    <string name="settings_device_ota">Firmware update (device)</string>
+    <string name="check_firmware_update">Check for firmware update</string>
+    <string name="checking_firmware">Checking firmware…</string>
+    <string name="firmware_up_to_date">Firmware is up to date</string>
+    <string name="firmware_available">Firmware %1$s available</string>
+    <string name="current_firmware_version">Current version: %1$s</string>
+    <string name="download_firmware">Download firmware</string>
+    <string name="downloading_firmware">Firmware %1$s — %2$d%%</string>
+    <string name="firmware_ready_to_upload">Firmware %1$s ready</string>
+    <string name="firmware_upload_warning">The device will be unreachable during the update. Do not interrupt the process.</string>
+    <string name="upload_firmware">Upload to device</string>
+    <string name="uploading_firmware">Uploading firmware %1$s…</string>
+    <string name="firmware_update_done">Firmware %1$s installed</string>
+
+    <!-- §8 Power-Saving (only visible when device reports power_saving capability) -->
+    <string name="settings_power_saving">Power saving</string>
+    <string name="power_saving_label">Power saving active</string>
+    <string name="power_saving_desc">Reduces device Wi-Fi activity and extends battery life.</string>
 
     <!-- Updates -->
     <string name="settings_updates">App updates</string>

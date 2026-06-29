@@ -1,4 +1,5 @@
 package org.battlo.freegrilly.data.api
+import okhttp3.MultipartBody
 import org.battlo.freegrilly.data.api.models.*
 import retrofit2.http.*
 
@@ -29,4 +30,13 @@ interface GrillyApiService {
 
     @GET("/api/wifiscan")
     suspend fun getWifiNetworks(): List<WifiNetwork>
+
+    /**
+     * §8 — OTA firmware upload (ElegantOTA-compatible, PUT /update).
+     * Only called when the device reports the `ota` capability.
+     * The multipart part must be named "firmware" and contain the .bin file bytes.
+     */
+    @Multipart
+    @PUT("/update")
+    suspend fun uploadFirmware(@Part firmware: MultipartBody.Part): SuccessResponse
 }

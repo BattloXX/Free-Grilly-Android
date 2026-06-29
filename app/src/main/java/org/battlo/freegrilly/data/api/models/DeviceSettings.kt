@@ -9,5 +9,7 @@ data class DeviceSettings(
     @SerialName("wifi_password") val wifiPassword: String? = null,
     @SerialName("temperature_unit") val temperatureUnit: String? = null,
     @SerialName("backlight_timeout_minutes") val backlightTimeoutMinutes: Int? = null,
-    @SerialName("screen_timeout_minutes") val screenTimeoutMinutes: Int? = null
+    @SerialName("screen_timeout_minutes") val screenTimeoutMinutes: Int? = null,
+    /** §8 — Power-saving mode. null = omit from request (field not sent). */
+    @SerialName("power_saving") val powerSaving: Boolean? = null,
 )

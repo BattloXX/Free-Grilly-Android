@@ -55,6 +55,9 @@
     <string name="add_new_device">Neues Gerät hinzufügen</string>
     <string name="demo_mode">Demo-Modus</string>
 
+    <!-- §8 Multi-Device -->
+    <string name="switch_device">Gerät wechseln</string>
+
     <!-- Device Selector -->
     <string name="select_device_title">Griller auswählen</string>
     <string name="connect">Verbinden</string>
@@ -67,6 +70,26 @@
     <string name="last_seen">Zuletzt: %1$s</string>
     <string name="manual_ip_title">IP-Adresse eingeben</string>
     <string name="manual_ip_hint">Verbinde dich direkt über die IP-Adresse deines Grillers.</string>
+
+    <!-- §8 OTA (nur sichtbar wenn Gerät ota-Capability meldet) -->
+    <string name="settings_device_ota">Firmware-Update (Gerät)</string>
+    <string name="check_firmware_update">Firmware prüfen</string>
+    <string name="checking_firmware">Prüfe Firmware …</string>
+    <string name="firmware_up_to_date">Firmware ist aktuell</string>
+    <string name="firmware_available">Firmware %1$s verfügbar</string>
+    <string name="current_firmware_version">Aktuelle Version: %1$s</string>
+    <string name="download_firmware">Firmware herunterladen</string>
+    <string name="downloading_firmware">Firmware %1$s — %2$d %%</string>
+    <string name="firmware_ready_to_upload">Firmware %1$s bereit</string>
+    <string name="firmware_upload_warning">Das Gerät ist während des Updates nicht erreichbar. Unterbrich den Vorgang nicht.</string>
+    <string name="upload_firmware">Auf Gerät übertragen</string>
+    <string name="uploading_firmware">Übertrage Firmware %1$s …</string>
+    <string name="firmware_update_done">Firmware %1$s installiert</string>
+
+    <!-- §8 Power-Saving (nur sichtbar wenn Gerät power_saving-Capability meldet) -->
+    <string name="settings_power_saving">Energiesparmodus</string>
+    <string name="power_saving_label">Energiesparmodus aktiv</string>
+    <string name="power_saving_desc">Reduziert die WLAN-Aktivität des Geräts und verlängert die Akkulaufzeit.</string>
 
     <!-- Updates -->
     <string name="settings_updates">App-Updates</string>

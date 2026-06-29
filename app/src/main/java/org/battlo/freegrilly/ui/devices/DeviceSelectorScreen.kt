@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.NetworkWifi
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Router
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +37,7 @@ fun DeviceSelectorScreen(
     val connectingUuid by viewModel.connectingUuid.collectAsStateWithLifecycle()
     val connectError by viewModel.connectError.collectAsStateWithLifecycle()
     val discoveryState by viewModel.discoveryState.collectAsStateWithLifecycle()
+    val discoveredDevices by viewModel.discoveredDevices.collectAsStateWithLifecycle()
     val colors = LocalGrillyColors.current
 
     var showManualDialog by remember { mutableStateOf(false) }
@@ -133,6 +135,27 @@ fun DeviceSelectorScreen(
                         }
                     }
                 }
+            }
+
+            // §8 — Live-discovered devices not yet in the saved list
+            val newlyFound = discoveredDevices.filter { found -> devices.none { it.uuid == found.uuid && it.uuid.isNotEmpty() } }
+            if (newlyFound.isNotEmpty()) {
+                item {
+                    Text(
+                        "Im Netzwerk gefunden",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                items(newlyFound, key = { "disc_${it.ip}" }) { found ->
+                    DiscoveredDeviceCard(
+                        device = found,
+                        isConnecting = connectingUuid == "manual",
+                        onAdd = { viewModel.connectManualIp(found.ip, onDeviceConnected) },
+                    )
+                }
+                item { HorizontalDivider(Modifier.padding(vertical = 4.dp)) }
             }
 
             items(devices, key = { it.uuid }) { device ->
@@ -244,6 +267,49 @@ private fun DeviceCard(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoveredDeviceCard(
+    device: org.battlo.freegrilly.data.DiscoveredDevice,
+    isConnecting: Boolean,
+    onAdd: () -> Unit,
+) {
+    val colors = LocalGrillyColors.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.Router,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 12.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(device.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    device.ip,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (isConnecting) {
+                CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+            } else {
+                Button(
+                    onClick = onAdd,
+                    colors = ButtonDefaults.buttonColors(containerColor = colors.emberOrange),
+                ) {
+                    Text(stringResource(R.string.connect))
                 }
             }
         }

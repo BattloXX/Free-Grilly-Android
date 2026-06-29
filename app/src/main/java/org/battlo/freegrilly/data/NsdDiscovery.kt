@@ -24,6 +24,14 @@ sealed interface DiscoveryState {
     object Failed : DiscoveryState
 }
 
+/** Represents a single device found during an NSD scan. */
+data class DiscoveredDevice(
+    val ip: String,
+    val name: String,
+    val uuid: String,
+    val serviceType: String,  // "free_grilly" or "original"
+)
+
 @Singleton
 class NsdDiscovery @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -32,6 +40,14 @@ class NsdDiscovery @Inject constructor(
 
     private val _state = MutableStateFlow<DiscoveryState>(DiscoveryState.Idle)
     val state: StateFlow<DiscoveryState> = _state.asStateFlow()
+
+    /**
+     * §8 — Accumulated list of all devices found during the current scan session.
+     * Devices are added when resolved and removed when [NsdManager] reports them lost.
+     * Cleared on [stopDiscovery]. Consumers should use this for a multi-device picker UI.
+     */
+    private val _discoveredDevices = MutableStateFlow<List<DiscoveredDevice>>(emptyList())
+    val discoveredDevices: StateFlow<List<DiscoveredDevice>> = _discoveredDevices.asStateFlow()
 
     private var nsdManager: NsdManager? = null
     private var freeGrillyListener: NsdManager.DiscoveryListener? = null
@@ -64,6 +80,7 @@ class NsdDiscovery @Inject constructor(
         freeGrillyListener = null
         legacyHttpListener = null
         _state.value = DiscoveryState.Idle
+        _discoveredDevices.value = emptyList()
     }
 
     private fun makeListener(
@@ -87,7 +104,11 @@ class NsdDiscovery @Inject constructor(
             mgr.resolveService(service, makeResolveListener(legacy, targetUuid))
         }
 
-        override fun onServiceLost(service: NsdServiceInfo) {}
+        override fun onServiceLost(service: NsdServiceInfo) {
+            // Remove the device from the accumulated list (by service name as a proxy for uuid)
+            _discoveredDevices.value = _discoveredDevices.value
+                .filterNot { it.name == service.serviceName }
+        }
         override fun onDiscoveryStopped(serviceType: String) {}
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
             if (!legacy) _state.value = DiscoveryState.Failed
@@ -107,12 +128,18 @@ class NsdDiscovery @Inject constructor(
             val name = si.serviceName ?: if (legacy) "Grilleye" else "Free-Grilly"
             val uuid = si.attributes?.get("uuid")?.let { String(it) } ?: ""
             if (targetUuid != null && uuid.isNotEmpty() && uuid != targetUuid) return
+            val variant = if (legacy) "original" else "free_grilly"
             _state.value = DiscoveryState.Found(
                 ip = ip,
                 name = name,
                 uuid = uuid,
-                firmwareVariant = if (legacy) "original" else "free_grilly",
+                firmwareVariant = variant,
             )
+            // §8 — accumulate into the multi-device list (upsert by uuid/ip)
+            val discovered = DiscoveredDevice(ip = ip, name = name, uuid = uuid, serviceType = variant)
+            _discoveredDevices.value = _discoveredDevices.value
+                .filterNot { it.uuid == uuid || it.ip == ip }
+                .plus(discovered)
         }
     }
 }

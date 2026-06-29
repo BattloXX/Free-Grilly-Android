@@ -7,12 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
+import org.battlo.freegrilly.ui.update.DeviceOtaSection
 import org.battlo.freegrilly.ui.update.UpdateSection
 import org.battlo.freegrilly.ui.update.UpdateViewModel
 
@@ -28,6 +30,13 @@ fun SettingsScreen(
     val language by viewModel.language.collectAsStateWithLifecycle()
     val isDemoMode by viewModel.isDemoMode.collectAsStateWithLifecycle()
     val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+    val supportsPowerSaving by viewModel.supportsPowerSaving.collectAsStateWithLifecycle()
+    val powerSaving by viewModel.powerSaving.collectAsStateWithLifecycle()
+
+    // Load current power-saving state from device when screen enters composition
+    LaunchedEffect(supportsPowerSaving) {
+        if (supportsPowerSaving) viewModel.loadPowerSavingState()
+    }
 
     Scaffold(
         topBar = {
@@ -116,6 +125,38 @@ fun SettingsScreen(
                 ) { Text(stringResource(R.string.add_new_device)) }
             }
 
+            // §8 — Power-saving (only visible when device declares power_saving capability)
+            if (supportsPowerSaving) {
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Text(
+                    stringResource(R.string.settings_power_saving),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.power_saving_label),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            stringResource(R.string.power_saving_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = powerSaving ?: false,
+                        onCheckedChange = { viewModel.setPowerSaving(it) },
+                        enabled = powerSaving != null,
+                    )
+                }
+            }
+
             HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
             UpdateSection(
@@ -129,6 +170,9 @@ fun SettingsScreen(
                 onInstall = { downloadId -> updateViewModel.installUpdate(downloadId) },
                 onDismiss = { updateViewModel.dismissError() },
             )
+
+            // §8 — Device OTA firmware update (only visible when device declares ota capability)
+            DeviceOtaSection()
         }
     }
 }

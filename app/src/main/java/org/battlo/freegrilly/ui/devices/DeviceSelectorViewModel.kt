@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import org.battlo.freegrilly.data.DeviceStore
+import org.battlo.freegrilly.data.DiscoveredDevice
 import org.battlo.freegrilly.data.DiscoveryState
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.KnownDevice
@@ -43,6 +44,13 @@ class DeviceSelectorViewModel @Inject constructor(
 
     val discoveryState: StateFlow<DiscoveryState> = nsdDiscovery.state
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DiscoveryState.Idle)
+
+    /**
+     * §8 — Live list of all devices found during the current NSD scan.
+     * Updated in real-time as devices are found or lost (multi-device picker).
+     */
+    val discoveredDevices: StateFlow<List<DiscoveredDevice>> = nsdDiscovery.discoveredDevices
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun connectDevice(device: KnownDevice, onSuccess: () -> Unit) {
         if (_connectingUuid.value != null) return
@@ -122,6 +130,18 @@ class DeviceSelectorViewModel @Inject constructor(
 
     fun removeDevice(uuid: String) {
         viewModelScope.launch { deviceStore.removeDevice(uuid) }
+    }
+
+    /**
+     * §8 — In-app device switch: stops current polling, clears the active device,
+     * and connects to [device]. Can be called from the Dashboard's device-switcher action.
+     */
+    fun switchToDevice(device: KnownDevice, onSuccess: () -> Unit) {
+        repository.stopPolling()
+        viewModelScope.launch {
+            deviceStore.clearSelectedDevice()
+            connectDevice(device, onSuccess)
+        }
     }
 
     fun dismissError() {

@@ -1,5 +1,6 @@
 package org.battlo.freegrilly.data.api
 
+import okhttp3.MultipartBody
 import org.battlo.freegrilly.data.api.models.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -111,4 +112,8 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
         WifiNetwork("Nachbar_WiFi", -72, "WPA2"),
         WifiNetwork("GästenetzFW", -68, "WPA2")
     )
+
+    // §8 — OTA stub (demo: always returns success, no real upload)
+    override suspend fun uploadFirmware(firmware: MultipartBody.Part) =
+        SuccessResponse(success = true, message = "Demo OTA: no-op")
 }

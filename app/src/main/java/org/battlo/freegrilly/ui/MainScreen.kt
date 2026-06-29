@@ -93,6 +93,10 @@ fun MainScreen(
                             popUpTo(Screen.Dashboard.route) { inclusive = true }
                         }
                     },
+                    // §8 — In-app device switch: navigate to selector without clearing back stack
+                    onNavigateToDeviceSelector = {
+                        navController.navigate(Screen.DeviceSelector.route)
+                    },
                 )
             }
             composable(
