@@ -43,6 +43,12 @@ fun DeviceSelectorScreen(
     var showManualDialog by remember { mutableStateOf(false) }
     var showScanFab by remember { mutableStateOf(false) }
 
+    // Auto-start mDNS scan when the screen opens; stops when it leaves composition.
+    // This allows a provisioned-but-not-registered Grilly to be found immediately —
+    // e.g. after a fresh install or cleared app data — without requiring a FAB tap.
+    LaunchedEffect(Unit) { viewModel.startNetworkScan() }
+    DisposableEffect(Unit) { onDispose { viewModel.stopNetworkScan() } }
+
     LaunchedEffect(discoveryState) {
         if (discoveryState is DiscoveryState.Found) {
             val found = discoveryState as DiscoveryState.Found

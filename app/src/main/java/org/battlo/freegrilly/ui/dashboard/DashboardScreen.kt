@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeviceHub
+import androidx.compose.foundation.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -70,7 +72,19 @@ fun DashboardScreen(
                 }
 
                 TopAppBar(
-                    title = { Text(status?.name ?: "Free-Grilly Demo") },
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.logo_grilly),
+                                contentDescription = null,
+                                modifier = Modifier.size(28.dp),
+                            )
+                            Text(status?.name ?: "Free-Grilly Demo")
+                        }
+                    },
                     actions = {
                         // §8 — Switch device icon (only shown when multiple devices might exist)
                         if (onNavigateToDeviceSelector != null) {
