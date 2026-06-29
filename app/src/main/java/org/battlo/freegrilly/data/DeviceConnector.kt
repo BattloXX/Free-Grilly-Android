@@ -100,7 +100,9 @@ class DeviceConnector @Inject constructor(
 
     private suspend fun tryDirectConnect(ip: String): Boolean {
         baseUrlInterceptor.currentHost.value = ip
-        return withTimeoutOrNull(3_000) {
+        // 8 s timeout — must exceed OkHttp's connectTimeout(5s) + first-byte latency on a
+        // freshly-booted device or right after the phone joins the network.
+        return withTimeoutOrNull(8_000) {
             runCatching { api.getGrillStatus() }.isSuccess
         } ?: false
     }
