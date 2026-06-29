@@ -139,7 +139,15 @@ class NsdDiscovery @Inject constructor(
             Log.w(TAG, "Resolve failed code=$code")
         }
         override fun onServiceResolved(si: NsdServiceInfo) {
-            val ip = si.host?.hostAddress ?: return
+            // Prefer IPv4: hostAddress may return a scoped IPv6 link-local address (e.g.
+            // "fe80::c2f1:abcd%wlan0") which OkHttp cannot use as an HTTP host. Strip the
+            // scope suffix; if what remains still looks IPv6 (contains ':'), skip this
+            // resolution — the NSD stack will deliver another result with the IPv4 address.
+            val rawAddress = si.host?.hostAddress ?: return
+            val ip = rawAddress.substringBefore('%').let { addr ->
+                if (addr.contains(':')) return  // IPv6 — skip, wait for IPv4 result
+                addr
+            }
             val name = si.serviceName ?: if (legacy) "Grilleye" else "Free-Grilly"
             val uuid = si.attributes?.get("uuid")?.let { String(it) } ?: ""
             if (targetUuid != null && uuid.isNotEmpty() && uuid != targetUuid) return

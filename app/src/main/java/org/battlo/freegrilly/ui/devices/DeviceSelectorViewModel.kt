@@ -60,6 +60,7 @@ class DeviceSelectorViewModel @Inject constructor(
 
     /** Connect to a device by raw IP address (manual entry or freshly discovered via mDNS scan). */
     fun connectManualIp(ip: String, onSuccess: () -> Unit) {
+        if (_connectingUuid.value != null) return
         viewModelScope.launch {
             _connectingUuid.value = "manual"
             _connectError.value = null
