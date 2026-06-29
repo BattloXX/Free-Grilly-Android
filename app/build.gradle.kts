@@ -15,8 +15,8 @@ android {
         applicationId = "org.battlo.freegrilly"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.0.1"
+        versionCode = 5
+        versionName = "0.0.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GITHUB_OWNER", "\"BattloXX\"")
         buildConfigField("String", "GITHUB_REPO", "\"Free-Grilly-Android\"")
