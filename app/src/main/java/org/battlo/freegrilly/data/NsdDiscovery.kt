@@ -3,6 +3,7 @@ package org.battlo.freegrilly.data
 import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
+import android.net.wifi.WifiManager
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +53,8 @@ class NsdDiscovery @Inject constructor(
     private var nsdManager: NsdManager? = null
     private var freeGrillyListener: NsdManager.DiscoveryListener? = null
     private var legacyHttpListener: NsdManager.DiscoveryListener? = null
+    /** Held during active NSD scans to ensure mDNS multicast packets reach the app. */
+    private var multicastLock: WifiManager.MulticastLock? = null
 
     /**
      * @param includeOriginal  When true, also scans `_http._tcp` for original epieces firmware.
@@ -59,6 +62,15 @@ class NsdDiscovery @Inject constructor(
      */
     fun startDiscovery(includeOriginal: Boolean = true, targetUuid: String? = null) {
         _state.value = DiscoveryState.Searching
+
+        // Acquire multicast lock so mDNS packets are not filtered by the Wi-Fi driver.
+        // Requires CHANGE_WIFI_MULTICAST_STATE permission in the manifest.
+        val wifiMgr = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        multicastLock = wifiMgr.createMulticastLock("GrillyNsd").also {
+            it.setReferenceCounted(false)
+            it.acquire()
+        }
+
         val mgr = (context.getSystemService(Context.NSD_SERVICE) as NsdManager).also { nsdManager = it }
 
         freeGrillyListener = makeListener(mgr, legacy = false, targetUuid = targetUuid)
@@ -81,6 +93,9 @@ class NsdDiscovery @Inject constructor(
         legacyHttpListener = null
         _state.value = DiscoveryState.Idle
         _discoveredDevices.value = emptyList()
+        // Release multicast lock when scanning stops.
+        runCatching { multicastLock?.release() }
+        multicastLock = null
     }
 
     private fun makeListener(

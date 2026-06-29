@@ -6,4 +6,15 @@
         <item name="android:navigationBarColor">@android:color/black</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <!--
+        Splash-screen theme (androidx.core:core-splashscreen).
+        The activity declares this theme; installSplashScreen() in MainActivity switches to
+        Theme.FreeGrilly after the OS removes the splash window.
+    -->
+    <style name="Theme.FreeGrilly.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/logo_grilly</item>
+        <item name="postSplashScreenTheme">@style/Theme.FreeGrilly</item>
+    </style>
 </resources>
