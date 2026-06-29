@@ -1,5 +1,7 @@
 package org.battlo.freegrilly.ui.devices
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,6 +26,7 @@ import org.battlo.freegrilly.R
 import org.battlo.freegrilly.data.DiscoveryState
 import org.battlo.freegrilly.data.KnownDevice
 import org.battlo.freegrilly.ui.theme.LocalGrillyColors
+import org.battlo.freegrilly.util.Permissions
 import java.text.DateFormat
 import java.util.Date
 
@@ -46,7 +50,21 @@ fun DeviceSelectorScreen(
     // Auto-start mDNS scan when the screen opens; stops when it leaves composition.
     // This allows a provisioned-but-not-registered Grilly to be found immediately —
     // e.g. after a fresh install or cleared app data — without requiring a FAB tap.
-    LaunchedEffect(Unit) { viewModel.startNetworkScan() }
+    // On Android 13+ NSD needs the Nearby-Wi-Fi permission, so request it first and
+    // (re)start the scan once it is granted.
+    val context = LocalContext.current
+    val nearbyPermission = Permissions.nearbyWifi
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) viewModel.startNetworkScan() }
+
+    LaunchedEffect(Unit) {
+        if (nearbyPermission != null && !Permissions.hasNearbyWifi(context)) {
+            permissionLauncher.launch(nearbyPermission)
+        } else {
+            viewModel.startNetworkScan()
+        }
+    }
     DisposableEffect(Unit) { onDispose { viewModel.stopNetworkScan() } }
 
     LaunchedEffect(discoveryState) {

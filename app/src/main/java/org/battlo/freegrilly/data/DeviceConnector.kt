@@ -1,11 +1,14 @@
 package org.battlo.freegrilly.data
 
+import android.content.Context
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import org.battlo.freegrilly.data.api.BaseUrlInterceptor
 import org.battlo.freegrilly.data.api.GrillyApiService
+import org.battlo.freegrilly.util.Permissions
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +28,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class DeviceConnector @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val api: GrillyApiService,
     private val nsdDiscovery: NsdDiscovery,
     private val deviceStore: DeviceStore,
@@ -41,32 +45,54 @@ class DeviceConnector @Inject constructor(
         // Demo device — always "connected", no network needed.
         if (device.ip == "demo" || device.uuid == "demo") return ConnectResult(success = true)
 
+        // 1) Fast path: the last-known IP.
         baseUrlInterceptor.currentHost.value = device.ip
-        return if (tryDirectConnect(device.ip)) {
+        if (tryDirectConnect(device.ip)) {
             Log.d(TAG, "Fast-path connect succeeded for ${device.name} at ${device.ip}")
             enrichAndSave(device)
-            ConnectResult(success = true)
-        } else {
-            Log.d(TAG, "Fast-path failed for ${device.name}; starting mDNS re-discovery")
-            // Slow path: rediscover by UUID
-            nsdDiscovery.startDiscovery(includeOriginal = true, targetUuid = device.uuid)
-            val found = withTimeoutOrNull(15_000) {
-                nsdDiscovery.state.filterIsInstance<DiscoveryState.Found>().first()
-            }
-            nsdDiscovery.stopDiscovery()
+            return ConnectResult(success = true)
+        }
 
-            if (found == null) {
-                Log.w(TAG, "mDNS re-discovery timed out for ${device.uuid}")
-                ConnectResult(
-                    success = false,
-                    errorMessage = "Gerät nicht gefunden. Prüfe ob der Grill eingeschaltet und im selben WLAN ist.",
-                )
-            } else {
-                Log.d(TAG, "mDNS found ${device.name} at new IP ${found.ip}")
-                baseUrlInterceptor.currentHost.value = found.ip
-                enrichAndSave(device.copy(ip = found.ip))
-                ConnectResult(success = true)
-            }
+        // 2) mDNS hostname (<host>.local): survives DHCP IP changes and is resolved by the
+        //    OS, so it works even when the app's own NSD scan can't run. Cheap → try before NSD.
+        val mdnsHost = device.mdnsHostname.takeIf { it.isNotBlank() }
+            ?.let { if (it.endsWith(".local")) it else "$it.local" }
+        if (mdnsHost != null && tryDirectConnect(mdnsHost)) {
+            Log.d(TAG, "Hostname-path connect succeeded for ${device.name} at $mdnsHost")
+            baseUrlInterceptor.currentHost.value = mdnsHost
+            enrichAndSave(device.copy(ip = mdnsHost))
+            return ConnectResult(success = true)
+        }
+
+        // 3) Slow path: NSD re-discovery by UUID. Requires the Nearby-Wi-Fi runtime
+        //    permission on Android 13+; without it discovery silently finds nothing, so
+        //    surface an actionable message instead of a generic "not found".
+        if (!Permissions.hasNearbyWifi(context)) {
+            Log.w(TAG, "Nearby-Wi-Fi permission missing — cannot run mDNS discovery")
+            return ConnectResult(
+                success = false,
+                errorMessage = "Berechtigung „Geräte in der Nähe\" fehlt – ohne sie kann der Grill im WLAN nicht gefunden werden. Bitte in den App-Einstellungen erlauben.",
+            )
+        }
+
+        Log.d(TAG, "Fast/hostname path failed for ${device.name}; starting mDNS re-discovery")
+        nsdDiscovery.startDiscovery(includeOriginal = true, targetUuid = device.uuid)
+        val found = withTimeoutOrNull(15_000) {
+            nsdDiscovery.state.filterIsInstance<DiscoveryState.Found>().first()
+        }
+        nsdDiscovery.stopDiscovery()
+
+        return if (found == null) {
+            Log.w(TAG, "mDNS re-discovery timed out for ${device.uuid}")
+            ConnectResult(
+                success = false,
+                errorMessage = "Gerät nicht gefunden. Prüfe ob der Grill eingeschaltet und im selben WLAN ist.",
+            )
+        } else {
+            Log.d(TAG, "mDNS found ${device.name} at new IP ${found.ip}")
+            baseUrlInterceptor.currentHost.value = found.ip
+            enrichAndSave(device.copy(ip = found.ip))
+            ConnectResult(success = true)
         }
     }
 
