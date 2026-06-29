@@ -22,8 +22,18 @@ android {
         buildConfigField("String", "GITHUB_REPO", "\"Free-Grilly-Android\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = System.getenv("KEYSTORE_PATH")?.let { file(it) }
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -32,8 +42,6 @@ android {
             )
         }
         debug {
-            // No applicationIdSuffix — keeps same ID as release so auto-update APK
-            // can replace the sideloaded debug build without reinstall.
             isDebuggable = true
         }
     }
