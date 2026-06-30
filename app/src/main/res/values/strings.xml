@@ -44,6 +44,12 @@
 
     <!-- History -->
     <string name="history_coming_soon">Sitzungsverlauf kommt bald</string>
+    <string name="history_empty">Noch keine aufgezeichneten Garungen</string>
+    <string name="history_tap_to_expand">Tippen für Verlaufsgrafik</string>
+    <string name="window_30min">30 min</string>
+    <string name="window_1h">1 h</string>
+    <string name="window_6h">6 h</string>
+    <string name="window_all">Gesamt</string>
 
     <!-- Settings -->
     <string name="settings_unit">Temperatureinheit</string>
