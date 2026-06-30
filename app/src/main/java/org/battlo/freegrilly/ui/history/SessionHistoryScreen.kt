@@ -68,8 +68,9 @@ fun SessionHistoryScreen(
 private fun SessionCard(session: CookSessionEntity, viewModel: SessionHistoryViewModel) {
     val colors = LocalGrillyColors.current
     var expanded by remember { mutableStateOf(false) }
-    val charts by produceState<List<ProbeSeries>?>(initialValue = null, expanded) {
-        value = if (expanded) viewModel.loadCharts(session.id) else null
+    var charts by remember(session.id) { mutableStateOf<List<ProbeSeries>?>(null) }
+    LaunchedEffect(expanded) {
+        charts = if (expanded) viewModel.loadCharts(session.id) else null
     }
 
     Card(
