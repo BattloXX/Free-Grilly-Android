@@ -53,7 +53,7 @@ fun DashboardScreen(
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(stringResource(R.string.disconnected), style = MaterialTheme.typography.headlineSmall)
-                        Button(onClick = { viewModel.muteAlarm() }) { Text(stringResource(R.string.retry)) }
+                        Button(onClick = { viewModel.reconnect() }) { Text(stringResource(R.string.reconnect)) }
                         OutlinedButton(onClick = onNavigateToOnboarding) { Text(stringResource(R.string.add_device)) }
                         TextButton(onClick = { viewModel.enableDemoMode() }) { Text(stringResource(R.string.use_demo_mode)) }
                     }
