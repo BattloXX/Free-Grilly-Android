@@ -11,7 +11,17 @@ import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
 import org.battlo.freegrilly.data.api.models.ProbeConfig
 import org.battlo.freegrilly.data.api.models.ProbeStatus
+import org.battlo.freegrilly.data.history.Downsample
+import org.battlo.freegrilly.data.history.TempSample
 import javax.inject.Inject
+
+/** Selectable graph time window. `durationMs == null` = whole cook (auto-fit). */
+enum class HistoryWindow(val durationMs: Long?) {
+    M30(30 * 60_000L),
+    H1(60 * 60_000L),
+    H6(6 * 60 * 60_000L),
+    ALL(null),
+}
 
 @HiltViewModel
 class ProbeDetailViewModel @Inject constructor(
@@ -26,9 +36,21 @@ class ProbeDetailViewModel @Inject constructor(
         .map { state -> (state as? GrillyUiState.Connected)?.status?.probes?.find { it.id == probeId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val history: StateFlow<List<Float>> = repository.statusFlow
-        .map { repository.getHistoryForProbe(probeId) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    private val windowState = MutableStateFlow(HistoryWindow.ALL)
+    val window: StateFlow<HistoryWindow> = windowState.asStateFlow()
+    fun setWindow(w: HistoryWindow) { windowState.value = w }
+
+    /** Time-stamped, window-filtered and downsampled samples for the chart. */
+    val samples: StateFlow<List<TempSample>> =
+        combine(repository.observeSamples(probeId), windowState) { all, w ->
+            val filtered = if (w.durationMs == null || all.isEmpty()) {
+                all
+            } else {
+                val cutoff = all.last().tsMs - w.durationMs
+                all.filter { it.tsMs >= cutoff }
+            }
+            Downsample.minMax(filtered, 300)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val unit: StateFlow<String> = deviceStore.temperatureUnit
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "celcius")

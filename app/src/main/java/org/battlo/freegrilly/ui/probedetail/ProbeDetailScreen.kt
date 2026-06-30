@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
 import org.battlo.freegrilly.domain.EtaFormatter
 import org.battlo.freegrilly.domain.TempUtils
-import org.battlo.freegrilly.ui.components.Sparkline
+import org.battlo.freegrilly.ui.components.TimeSeriesChart
 import org.battlo.freegrilly.ui.theme.LocalGrillyColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +33,8 @@ fun ProbeDetailScreen(
     viewModel: ProbeDetailViewModel = hiltViewModel(),
 ) {
     val probe by viewModel.probe.collectAsStateWithLifecycle()
-    val history by viewModel.history.collectAsStateWithLifecycle()
+    val samples by viewModel.samples.collectAsStateWithLifecycle()
+    val window by viewModel.window.collectAsStateWithLifecycle()
     val unit by viewModel.unit.collectAsStateWithLifecycle()
     val colors = LocalGrillyColors.current
     var showTargetDialog by remember { mutableStateOf(false) }
@@ -93,16 +94,26 @@ fun ProbeDetailScreen(
                     }
                 }
 
-                if (history.size > 2) {
+                if (samples.size > 2) {
                     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                         Column(Modifier.padding(16.dp)) {
                             Text(stringResource(R.string.temperature_history), style = MaterialTheme.typography.titleSmall)
                             Spacer(Modifier.height(8.dp))
-                            Sparkline(
-                                data = history,
-                                targetTemp = p.targetTemperature,
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                HistoryWindow.entries.forEach { w ->
+                                    FilterChip(
+                                        selected = window == w,
+                                        onClick = { viewModel.setWindow(w) },
+                                        label = { Text(stringResource(windowLabel(w))) },
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            TimeSeriesChart(
+                                data = samples,
+                                targetTemp = p.targetTemperature.takeIf { it > 0f },
                                 color = if (p.alarm) colors.criticalRed else colors.emberOrange,
-                                modifier = Modifier.fillMaxWidth().height(160.dp),
+                                modifier = Modifier.fillMaxWidth().height(180.dp),
                                 strokeWidth = 2f,
                             )
                         }
@@ -152,4 +163,11 @@ fun ProbeDetailScreen(
             },
         )
     }
+}
+
+private fun windowLabel(w: HistoryWindow): Int = when (w) {
+    HistoryWindow.M30 -> R.string.window_30min
+    HistoryWindow.H1 -> R.string.window_1h
+    HistoryWindow.H6 -> R.string.window_6h
+    HistoryWindow.ALL -> R.string.window_all
 }

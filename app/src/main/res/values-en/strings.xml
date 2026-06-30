@@ -44,6 +44,12 @@
 
     <!-- History -->
     <string name="history_coming_soon">Session history coming soon</string>
+    <string name="history_empty">No recorded cooks yet</string>
+    <string name="history_tap_to_expand">Tap for the history graph</string>
+    <string name="window_30min">30 min</string>
+    <string name="window_1h">1 h</string>
+    <string name="window_6h">6 h</string>
+    <string name="window_all">All</string>
 
     <!-- Settings -->
     <string name="settings_unit">Temperature unit</string>
