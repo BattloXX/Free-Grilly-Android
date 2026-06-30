@@ -87,7 +87,7 @@ fun MeatLibraryScreen(
                         onToggle = { expandedFoodId = if (expandedFoodId == food.id) null else food.id },
                         onAssign = { doneness ->
                             if (targetProbeId != null) {
-                                viewModel.assignToProbe(targetProbeId, doneness.targetC, doneness.minC)
+                                viewModel.assignToProbe(targetProbeId, food, doneness.targetC, doneness.minC)
                                 onBack()
                             }
                         },

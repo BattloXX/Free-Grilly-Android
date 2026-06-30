@@ -33,6 +33,9 @@
     <string name="temperature_history">Temperaturverlauf</string>
     <string name="edit_target">Ziel bearbeiten</string>
     <string name="assign_food">Grillgut zuweisen</string>
+    <string name="rename_probe">Sonde umbenennen</string>
+    <string name="probe_name">Sondenname</string>
+    <string name="target_temperature_label">Zieltemperatur (°C)</string>
     <string name="save">Speichern</string>
     <string name="cancel">Abbrechen</string>
 
@@ -50,6 +53,31 @@
     <string name="window_1h">1 h</string>
     <string name="window_6h">6 h</string>
     <string name="window_all">Gesamt</string>
+
+    <!-- Grilly status -->
+    <string name="settings_device_status">Grilly-Status</string>
+    <string name="status_title">Grilly-Status</string>
+    <string name="status_refresh">Aktualisieren</string>
+    <string name="status_section_identity">Gerät</string>
+    <string name="status_section_network">Netzwerk</string>
+    <string name="status_section_power">Energie</string>
+    <string name="status_section_probes">Sonden</string>
+    <string name="status_section_capabilities">Funktionen</string>
+    <string name="status_state">Status</string>
+    <string name="status_name">Name</string>
+    <string name="status_firmware">Firmware</string>
+    <string name="status_uuid">UUID</string>
+    <string name="status_mdns">mDNS-Hostname</string>
+    <string name="status_ip">IP-Adresse</string>
+    <string name="status_wifi">WLAN</string>
+    <string name="status_wifi_signal">Signalstärke</string>
+    <string name="status_battery">Akku</string>
+    <string name="status_charging">lädt</string>
+    <string name="status_unit">Einheit</string>
+    <string name="status_probes_connected">Verbundene Sonden</string>
+    <string name="status_connected">Verbunden</string>
+    <string name="status_demo">Demo-Modus</string>
+    <string name="status_value_unknown">—</string>
 
     <!-- Settings -->
     <string name="settings_unit">Temperatureinheit</string>

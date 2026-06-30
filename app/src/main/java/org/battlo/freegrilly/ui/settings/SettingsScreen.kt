@@ -23,6 +23,7 @@ import org.battlo.freegrilly.ui.update.UpdateViewModel
 fun SettingsScreen(
     onBack: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
+    onNavigateToStatus: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -119,6 +120,10 @@ fun SettingsScreen(
                     }
                 }
             } else {
+                OutlinedButton(
+                    onClick = onNavigateToStatus,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.settings_device_status)) }
                 OutlinedButton(
                     onClick = onNavigateToOnboarding,
                     modifier = Modifier.fillMaxWidth(),

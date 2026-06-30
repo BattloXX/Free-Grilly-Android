@@ -33,6 +33,9 @@
     <string name="temperature_history">Temperature history</string>
     <string name="edit_target">Edit target</string>
     <string name="assign_food">Assign food</string>
+    <string name="rename_probe">Rename probe</string>
+    <string name="probe_name">Probe name</string>
+    <string name="target_temperature_label">Target temperature (°C)</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
 
@@ -50,6 +53,31 @@
     <string name="window_1h">1 h</string>
     <string name="window_6h">6 h</string>
     <string name="window_all">All</string>
+
+    <!-- Grilly status -->
+    <string name="settings_device_status">Grilly status</string>
+    <string name="status_title">Grilly status</string>
+    <string name="status_refresh">Refresh</string>
+    <string name="status_section_identity">Device</string>
+    <string name="status_section_network">Network</string>
+    <string name="status_section_power">Power</string>
+    <string name="status_section_probes">Probes</string>
+    <string name="status_section_capabilities">Capabilities</string>
+    <string name="status_state">Status</string>
+    <string name="status_name">Name</string>
+    <string name="status_firmware">Firmware</string>
+    <string name="status_uuid">UUID</string>
+    <string name="status_mdns">mDNS hostname</string>
+    <string name="status_ip">IP address</string>
+    <string name="status_wifi">Wi-Fi</string>
+    <string name="status_wifi_signal">Signal strength</string>
+    <string name="status_battery">Battery</string>
+    <string name="status_charging">charging</string>
+    <string name="status_unit">Unit</string>
+    <string name="status_probes_connected">Connected probes</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_demo">Demo mode</string>
+    <string name="status_value_unknown">—</string>
 
     <!-- Settings -->
     <string name="settings_unit">Temperature unit</string>

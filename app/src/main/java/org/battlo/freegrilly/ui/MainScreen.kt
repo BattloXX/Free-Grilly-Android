@@ -16,6 +16,7 @@ import org.battlo.freegrilly.ui.library.MeatLibraryScreen
 import org.battlo.freegrilly.ui.onboarding.OnboardingScreen
 import org.battlo.freegrilly.ui.probedetail.ProbeDetailScreen
 import org.battlo.freegrilly.ui.settings.SettingsScreen
+import org.battlo.freegrilly.ui.status.DeviceStatusScreen
 
 sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
@@ -30,6 +31,7 @@ sealed class Screen(val route: String) {
     }
     object History : Screen("history")
     object Settings : Screen("settings")
+    object DeviceStatus : Screen("device_status")
 }
 
 val mainNavRoutes = listOf(
@@ -127,7 +129,11 @@ fun MainScreen(
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToOnboarding = { navController.navigate(Screen.Onboarding.route) },
+                    onNavigateToStatus = { navController.navigate(Screen.DeviceStatus.route) },
                 )
+            }
+            composable(Screen.DeviceStatus.route) {
+                DeviceStatusScreen(onBack = { navController.popBackStack() })
             }
         }
     }

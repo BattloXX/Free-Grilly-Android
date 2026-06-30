@@ -255,6 +255,21 @@ class GrillyRepository @Inject constructor(
         api.updateProbes(listOf(config))
     }
 
+    /**
+     * Read-modify-write a single probe's config. POST /api/probes is a full replace on the
+     * device — any omitted field is reset (type → "custom", thermistor references → 0). So we
+     * fetch the probe's current full config, apply [mutate] (e.g. change only the target or the
+     * name), and post it back with everything else preserved. This is what keeps "set a target"
+     * from silently switching the probe type to Custom and zeroing its calibration.
+     */
+    suspend fun patchProbe(probeId: Int, mutate: (ProbeConfig) -> ProbeConfig): Result<Unit> =
+        runCatching {
+            val configs = api.getProbes()
+            val current = configs.firstOrNull { it.id == probeId }
+                ?: error("Probe $probeId not found")
+            api.updateProbes(listOf(mutate(current)))
+        }
+
     suspend fun updateSettings(
         grillName: String? = null,
         unit: String? = null,
