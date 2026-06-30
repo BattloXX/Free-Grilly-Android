@@ -59,7 +59,7 @@ class OnboardingViewModel @Inject constructor(
         if (networks.isNotEmpty()) {
             _step.value = OnboardingStep.Credentials(networks)
         } else {
-            _error.value = "Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-AP (FreeGrilly_xxxxxxxx) oder dem Grilleye-AP (Grilleye_xxxxxxxx) verbunden bist."
+            _error.value = "Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-AP (FreeGrilly_xxxxxx) oder dem Grilleye-AP (Grilleye_xxxxxx) verbunden bist."
             _step.value = OnboardingStep.ApConnect
         }
     }
