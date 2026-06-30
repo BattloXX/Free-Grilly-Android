@@ -38,6 +38,7 @@ fun ProbeDetailScreen(
     val unit by viewModel.unit.collectAsStateWithLifecycle()
     val colors = LocalGrillyColors.current
     var showTargetDialog by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -53,6 +54,12 @@ fun ProbeDetailScreen(
                         IconButton(onClick = { viewModel.muteAlarm() }) {
                             Icon(Icons.Default.NotificationsOff, contentDescription = null)
                         }
+                    }
+                    IconButton(onClick = { showRenameDialog = true }) {
+                        Icon(
+                            Icons.Default.DriveFileRenameOutline,
+                            contentDescription = stringResource(R.string.rename_probe),
+                        )
                     }
                 },
             )
@@ -147,7 +154,7 @@ fun ProbeDetailScreen(
                 OutlinedTextField(
                     value = targetInput,
                     onValueChange = { if (it.all { c -> c.isDigit() }) targetInput = it },
-                    label = { Text("Zieltemperatur (°C)") },
+                    label = { Text(stringResource(R.string.target_temperature_label)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
@@ -160,6 +167,34 @@ fun ProbeDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showTargetDialog = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (showRenameDialog) {
+        var nameInput by remember { mutableStateOf(probe?.name ?: "") }
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text(stringResource(R.string.rename_probe)) },
+            text = {
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    label = { Text(stringResource(R.string.probe_name)) },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.setName(nameInput)
+                        showRenameDialog = false
+                    },
+                    enabled = nameInput.isNotBlank(),
+                ) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

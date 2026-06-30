@@ -6,7 +6,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.GrillyRepository
-import org.battlo.freegrilly.data.api.models.ProbeConfig
 import org.battlo.freegrilly.data.food.FoodItem
 import org.battlo.freegrilly.data.food.FoodRepository
 import javax.inject.Inject
@@ -46,16 +45,20 @@ class MeatLibraryViewModel @Inject constructor(
     fun setSearchQuery(q: String) { _searchQuery.value = q }
     fun setCategory(cat: String?) { _selectedCategory.value = cat }
 
-    fun assignToProbe(probeId: Int, targetC: Int, minC: Int? = null) {
+    /**
+     * Assign a food to a probe: name the probe after the food and set its target/minimum.
+     * Read-modify-write so the probe's type and thermistor calibration are preserved (assigning
+     * a food describes what's cooking, not which physical probe is plugged in).
+     */
+    fun assignToProbe(probeId: Int, food: FoodItem, targetC: Int, minC: Int? = null) {
         viewModelScope.launch {
-            grillyRepository.updateProbeConfig(
-                ProbeConfig(
-                    id = probeId,
-                    name = "",
+            grillyRepository.patchProbe(probeId) {
+                it.copy(
+                    name = food.nameDe,
                     targetTemperature = targetC.toFloat(),
                     minimumTemperature = (minC ?: 0).toFloat(),
                 )
-            )
+            }
         }
     }
 }

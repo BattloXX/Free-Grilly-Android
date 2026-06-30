@@ -75,7 +75,8 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
         grillName = "Demo Griller",
         temperatureUnit = "celcius",
         backlightTimeoutMinutes = 3,
-        screenTimeoutMinutes = 0
+        screenTimeoutMinutes = 0,
+        powerSaving = true,
     )
 
     override suspend fun updateSettings(settings: DeviceSettings) = SuccessResponse(success = true)
@@ -104,7 +105,7 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
         name = "Demo Griller",
         firmware = "demo",
         mdnsHostname = "free-grilly-demo1234",
-        capabilities = listOf("history", "alarm_mute", "eta")
+        capabilities = listOf("history", "alarm_mute", "eta", "power_saving")
     )
 
     override suspend fun getWifiNetworks() = listOf(

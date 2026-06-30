@@ -9,7 +9,6 @@ import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
-import org.battlo.freegrilly.data.api.models.ProbeConfig
 import org.battlo.freegrilly.data.api.models.ProbeStatus
 import org.battlo.freegrilly.data.history.Downsample
 import org.battlo.freegrilly.data.history.TempSample
@@ -57,17 +56,24 @@ class ProbeDetailViewModel @Inject constructor(
 
     fun muteAlarm() = viewModelScope.launch { repository.muteAlarm() }
 
+    /**
+     * Change only the target (and optional minimum). Probe type, name and thermistor
+     * calibration are preserved via read-modify-write — setting a target must not flip the
+     * probe to "Custom".
+     */
     fun setTarget(targetC: Float, minC: Float = 0f) {
-        val current = probe.value ?: return
         viewModelScope.launch {
-            repository.updateProbeConfig(
-                ProbeConfig(
-                    id = current.id,
-                    name = current.name,
-                    targetTemperature = targetC,
-                    minimumTemperature = minC,
-                )
-            )
+            repository.patchProbe(probeId) {
+                it.copy(targetTemperature = targetC, minimumTemperature = minC)
+            }
+        }
+    }
+
+    /** Rename the probe; everything else (type, target, calibration) is preserved. */
+    fun setName(name: String) {
+        val trimmed = name.trim()
+        viewModelScope.launch {
+            repository.patchProbe(probeId) { it.copy(name = trimmed) }
         }
     }
 }

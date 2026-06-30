@@ -41,8 +41,10 @@ class SettingsViewModel @Inject constructor(
 
     fun loadPowerSavingState() {
         viewModelScope.launch {
-            val settings = runCatching { repository.getDeviceSettings() }.getOrNull() ?: return@launch
-            _powerSaving.value = settings.powerSaving ?: false
+            // Default to false (toggle becomes enabled) even if the read fails or the device
+            // omits the field, so the user can always operate the switch.
+            val settings = runCatching { repository.getDeviceSettings() }.getOrNull()
+            _powerSaving.value = settings?.powerSaving ?: false
         }
     }
 
