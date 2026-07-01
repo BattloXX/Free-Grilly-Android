@@ -74,6 +74,21 @@
     <string name="status_wifi_signal">Signalstärke</string>
     <string name="status_battery">Akku</string>
     <string name="status_charging">lädt</string>
+    <string name="status_battery_voltage">Zellspannung</string>
+    <string name="status_section_diagnostics">Diagnose</string>
+    <string name="status_last_reset">Letzter Neustart</string>
+    <string name="status_last_off">Letzte Abschaltung</string>
+    <!-- Reset-Gründe -->
+    <string name="reset_poweron">Einschalten</string>
+    <string name="reset_deepsleep">Aufwachen (Knopf)</string>
+    <string name="reset_brownout">Spannungseinbruch (Brownout)</string>
+    <string name="reset_panic">Absturz</string>
+    <string name="reset_watchdog">Watchdog</string>
+    <string name="reset_sw">Software-Neustart</string>
+    <!-- Abschalt-Gründe -->
+    <string name="off_button">Knopf</string>
+    <string name="off_low_battery">Akkuschutz (fast leer)</string>
+    <string name="off_boot_gate">Einschalten nicht bestätigt</string>
     <string name="status_unit">Einheit</string>
     <string name="status_probes_connected">Verbundene Sonden</string>
     <string name="status_connected">Verbunden</string>
