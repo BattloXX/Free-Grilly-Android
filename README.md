@@ -32,6 +32,7 @@ Native Android-App für das **Free-Grilly** Grillthermometer (BattloXX-Fork der 
 - **Demo-Modus** – ohne Hardware bedienbar
 - Eigene Grillgüter + Favoriten (Room-Datenbank)
 - **In-App OTA** – Firmware-Update direkt aus der App heraus (wenn vom Gerät unterstützt)
+- **Geräte-Status & Diagnose** – Grilly-Status-Ansicht mit Energie (Akku %, Zellspannung) und Diagnose (Grund des letzten Neustarts / der letzten Abschaltung)
 
 ## Voraussetzungen
 
@@ -100,6 +101,7 @@ Native Android app for the **Free-Grilly** grill thermometer (BattloXX fork of t
 - **Demo mode** – usable without hardware
 - Custom food entries + favorites (Room database)
 - **In-app OTA** – update device firmware directly from the app (when supported by firmware)
+- **Device status & diagnostics** – Grilly status screen with energy (battery %, cell voltage) and diagnostics (reason for the last restart / last power-off)
 
 ## Requirements
 
