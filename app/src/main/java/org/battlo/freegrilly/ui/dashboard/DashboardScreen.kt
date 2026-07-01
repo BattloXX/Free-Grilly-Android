@@ -54,6 +54,12 @@ fun DashboardScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(stringResource(R.string.disconnected), style = MaterialTheme.typography.headlineSmall)
                         Button(onClick = { viewModel.reconnect() }) { Text(stringResource(R.string.reconnect)) }
+                        // Connect to a different / existing Grilly on the Wi-Fi (mDNS scan or manual IP).
+                        if (onNavigateToDeviceSelector != null) {
+                            OutlinedButton(onClick = onNavigateToDeviceSelector) {
+                                Text(stringResource(R.string.connect_existing_device))
+                            }
+                        }
                         OutlinedButton(onClick = onNavigateToOnboarding) { Text(stringResource(R.string.add_device)) }
                         TextButton(onClick = { viewModel.enableDemoMode() }) { Text(stringResource(R.string.use_demo_mode)) }
                     }

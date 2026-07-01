@@ -88,6 +88,7 @@
     <string name="demo_mode_active">Demo-Modus aktiv</string>
     <string name="exit_demo_mode">Demo verlassen</string>
     <string name="add_new_device">Neues Gerät hinzufügen</string>
+    <string name="connect_existing_device">Bestehenden Grilly verbinden</string>
     <string name="demo_mode">Demo-Modus</string>
 
     <!-- §8 Multi-Device -->

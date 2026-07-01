@@ -88,6 +88,7 @@
     <string name="demo_mode_active">Demo mode active</string>
     <string name="exit_demo_mode">Exit demo</string>
     <string name="add_new_device">Add new device</string>
+    <string name="connect_existing_device">Connect existing grill</string>
     <string name="demo_mode">Demo mode</string>
 
     <!-- §8 Multi-Device -->

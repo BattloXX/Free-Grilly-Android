@@ -22,6 +22,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onNavigateToOnboarding: () -> Unit,
     onNavigateToStatus: () -> Unit = {},
+    onNavigateToDeviceSelector: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
@@ -111,6 +112,13 @@ fun SettingsScreen(
                     onClick = onNavigateToStatus,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.settings_device_status)) }
+                // Connect to a Grilly already on the Wi-Fi (mDNS scan / manual IP) — the
+                // DeviceSelector handles both. This is the path for adopting an existing device
+                // without going through AP re-provisioning.
+                OutlinedButton(
+                    onClick = onNavigateToDeviceSelector,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.connect_existing_device)) }
                 OutlinedButton(
                     onClick = onNavigateToOnboarding,
                     modifier = Modifier.fillMaxWidth(),
