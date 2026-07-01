@@ -26,6 +26,7 @@
     <!-- Dashboard -->
     <string name="disconnected">Getrennt</string>
     <string name="retry">Erneut versuchen</string>
+    <string name="reconnect">Erneut verbinden</string>
     <string name="add_device">Gerät hinzufügen</string>
     <string name="alarm_ready">Fertig</string>
 

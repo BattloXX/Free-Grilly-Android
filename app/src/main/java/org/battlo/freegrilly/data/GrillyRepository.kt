@@ -130,6 +130,11 @@ class GrillyRepository @Inject constructor(
         _statusFlow.value = GrillyUiState.Demo
     }
 
+    /** Show the "connecting" spinner while a manual reconnect is in flight. */
+    fun setReconnecting() {
+        _statusFlow.value = GrillyUiState.Loading
+    }
+
     /**
      * Open the current cook session, resuming the previous one if its last sample is recent
      * (so a cook continues across app restarts / device reboots), otherwise creating a new one.

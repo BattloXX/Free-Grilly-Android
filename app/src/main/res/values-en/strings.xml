@@ -26,6 +26,7 @@
     <!-- Dashboard -->
     <string name="disconnected">Disconnected</string>
     <string name="retry">Retry</string>
+    <string name="reconnect">Reconnect</string>
     <string name="add_device">Add device</string>
     <string name="alarm_ready">Ready</string>
 
