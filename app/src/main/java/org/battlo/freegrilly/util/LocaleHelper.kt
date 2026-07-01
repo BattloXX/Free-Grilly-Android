@@ -5,11 +5,9 @@ import androidx.core.os.LocaleListCompat
 
 /**
  * Applies the app's language preference ("system" / "de" / "en") via the AndroidX per-app
- * language API. [MainActivity][org.battlo.freegrilly.MainActivity] is a plain
- * `ComponentActivity`, not `AppCompatActivity`, so unlike a typical AppCompat app the running
- * activity is not auto-recreated when the locale changes below API 33 — callers must recreate
- * the current activity themselves after calling [applyLanguage] for the change to take effect
- * immediately.
+ * language API. Requires [MainActivity][org.battlo.freegrilly.MainActivity] to be an
+ * `AppCompatActivity` — only then does AppCompat intercept `attachBaseContext()` to actually
+ * rewrite resource resolution, and auto-recreate the running activity on change.
  */
 object LocaleHelper {
     fun applyLanguage(lang: String) {

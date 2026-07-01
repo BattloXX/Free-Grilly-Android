@@ -1,6 +1,5 @@
 package org.battlo.freegrilly.ui.settings
 
-import android.app.Activity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -8,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -28,7 +26,6 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
     val unit by viewModel.unit.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val isDemoMode by viewModel.isDemoMode.collectAsStateWithLifecycle()
@@ -76,22 +73,21 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.primary,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Recreating the activity is required for the new locale's strings to take
-                // effect immediately (MainActivity is a plain ComponentActivity, so unlike
-                // AppCompatActivity it isn't auto-recreated by AppCompat on language change).
+                // MainActivity is an AppCompatActivity, so AppCompat recreates it automatically
+                // once setApplicationLocales() is called — no manual recreate() needed here.
                 FilterChip(
                     selected = language == "system",
-                    onClick = { viewModel.setLanguage("system"); (context as? Activity)?.recreate() },
+                    onClick = { viewModel.setLanguage("system") },
                     label = { Text(stringResource(R.string.lang_system)) },
                 )
                 FilterChip(
                     selected = language == "de",
-                    onClick = { viewModel.setLanguage("de"); (context as? Activity)?.recreate() },
+                    onClick = { viewModel.setLanguage("de") },
                     label = { Text("Deutsch") },
                 )
                 FilterChip(
                     selected = language == "en",
-                    onClick = { viewModel.setLanguage("en"); (context as? Activity)?.recreate() },
+                    onClick = { viewModel.setLanguage("en") },
                     label = { Text("English") },
                 )
             }

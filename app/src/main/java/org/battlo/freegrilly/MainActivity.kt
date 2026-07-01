@@ -1,10 +1,10 @@
 package org.battlo.freegrilly
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
 import androidx.compose.runtime.collectAsState
@@ -19,8 +19,12 @@ import org.battlo.freegrilly.ui.MainViewModel
 import org.battlo.freegrilly.ui.theme.FreeGrillyTheme
 import org.battlo.freegrilly.util.Permissions
 
+// AppCompatActivity (not ComponentActivity) is required for AppCompatDelegate.setApplicationLocales()
+// to actually take effect: AppCompat only rewrites attachBaseContext()'s Resources — and
+// auto-recreates on locale change — for its own Activity subclass. On a plain ComponentActivity,
+// setApplicationLocales() persists the preference but never changes what strings resolve to.
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     // Registered before STARTED (field initializer) as required by the Activity Result API.
     // We don't gate the UI on the outcome — discovery simply works once Nearby-Wi-Fi is granted.
