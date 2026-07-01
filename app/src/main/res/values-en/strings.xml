@@ -74,6 +74,21 @@
     <string name="status_wifi_signal">Signal strength</string>
     <string name="status_battery">Battery</string>
     <string name="status_charging">charging</string>
+    <string name="status_battery_voltage">Cell voltage</string>
+    <string name="status_section_diagnostics">Diagnostics</string>
+    <string name="status_last_reset">Last restart</string>
+    <string name="status_last_off">Last power-off</string>
+    <!-- Reset reasons -->
+    <string name="reset_poweron">Power-on</string>
+    <string name="reset_deepsleep">Wake (button)</string>
+    <string name="reset_brownout">Voltage drop (brownout)</string>
+    <string name="reset_panic">Crash</string>
+    <string name="reset_watchdog">Watchdog</string>
+    <string name="reset_sw">Software restart</string>
+    <!-- Power-off reasons -->
+    <string name="off_button">Button</string>
+    <string name="off_low_battery">Battery protection (nearly empty)</string>
+    <string name="off_boot_gate">Power-on not confirmed</string>
     <string name="status_unit">Unit</string>
     <string name="status_probes_connected">Connected probes</string>
     <string name="status_connected">Connected</string>

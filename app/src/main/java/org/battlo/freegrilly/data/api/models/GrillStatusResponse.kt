@@ -11,6 +11,12 @@ data class GrillStatusResponse(
     @SerialName("temperature_unit") val temperatureUnit: String = "celcius",
     @SerialName("battery_percentage") val batteryPercentage: Int = 0,
     @SerialName("battery_charging") val batteryCharging: Boolean = false,
+    /** Measured cell voltage in mV (firmware ≥26.07.01); 0 if unavailable/older firmware. */
+    @SerialName("battery_millivolts") val batteryMillivolts: Int = 0,
+    /** Why the device last powered off: "button"/"low_battery"/"boot_gate"/"" (firmware ≥26.07.01). */
+    @SerialName("last_off_reason") val lastOffReason: String = "",
+    /** ESP32 reset reason at last boot, e.g. "brownout"/"panic"/"deepsleep" (firmware ≥26.07.01). */
+    @SerialName("last_reset_reason") val lastResetReason: String = "",
     @SerialName("wifi_connected") val wifiConnected: Boolean = false,
     @SerialName("wifi_signal") val wifiSignal: Int = -100,
     @SerialName("alarm_active") val alarmActive: Boolean = false,

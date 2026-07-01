@@ -86,6 +86,28 @@ fun DeviceStatusScreen(
                         "${ui.batteryPercent}%$charging"
                     } else dash,
                 )
+                // Cell voltage: diagnostics for a miscalibrated gauge (firmware ≥26.07.01).
+                if (ui.connected && ui.batteryMillivolts > 0) {
+                    StatusRow(
+                        stringResource(R.string.status_battery_voltage),
+                        "%.2f V".format(ui.batteryMillivolts / 1000f),
+                    )
+                }
+            }
+
+            // Diagnostics: why the device last reset / powered off. Only shown when the
+            // firmware reports it (older firmware leaves these blank).
+            val resetText = resetReasonText(ui.lastResetReason)
+            val offText = offReasonText(ui.lastOffReason)
+            if (resetText != null || offText != null) {
+                StatusCard(stringResource(R.string.status_section_diagnostics)) {
+                    if (resetText != null) {
+                        StatusRow(stringResource(R.string.status_last_reset), resetText)
+                    }
+                    if (offText != null) {
+                        StatusRow(stringResource(R.string.status_last_off), offText)
+                    }
+                }
             }
 
             StatusCard(stringResource(R.string.status_section_probes)) {
@@ -151,3 +173,27 @@ private fun StatusRow(label: String, value: String) {
 
 /** dBm → rough percentage per the firmware API guide: percent = 140 + dBm, clamped 0–100. */
 private fun wifiPercent(dbm: Int): Int = (140 + dbm).coerceIn(0, 100)
+
+/** Localized label for a firmware `last_reset_reason` code, or null when unknown/blank. */
+@Composable
+private fun resetReasonText(code: String): String? = when (code) {
+    "poweron" -> stringResource(R.string.reset_poweron)
+    "deepsleep" -> stringResource(R.string.reset_deepsleep)
+    "brownout" -> stringResource(R.string.reset_brownout)
+    "panic" -> stringResource(R.string.reset_panic)
+    "int_wdt", "task_wdt", "wdt" -> stringResource(R.string.reset_watchdog)
+    "sw" -> stringResource(R.string.reset_sw)
+    "" -> null
+    // Unknown/other codes: show the raw value rather than hiding it (still useful info).
+    else -> code
+}
+
+/** Localized label for a firmware `last_off_reason` code, or null when unknown/blank. */
+@Composable
+private fun offReasonText(code: String): String? = when (code) {
+    "button" -> stringResource(R.string.off_button)
+    "low_battery" -> stringResource(R.string.off_low_battery)
+    "boot_gate" -> stringResource(R.string.off_boot_gate)
+    "" -> null
+    else -> code
+}
