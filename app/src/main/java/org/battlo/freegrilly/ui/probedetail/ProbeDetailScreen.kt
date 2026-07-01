@@ -5,7 +5,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,10 +20,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
 import org.battlo.freegrilly.domain.EtaFormatter
 import org.battlo.freegrilly.domain.TempUtils
+import org.battlo.freegrilly.ui.components.CompactHeader
 import org.battlo.freegrilly.ui.components.TimeSeriesChart
 import org.battlo.freegrilly.ui.theme.LocalGrillyColors
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProbeDetailScreen(
     probeId: Int,
@@ -40,34 +39,26 @@ fun ProbeDetailScreen(
     var showTargetDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(probe?.name ?: "Sonde $probeId") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+    Column(Modifier.fillMaxSize()) {
+        CompactHeader(
+            title = probe?.name ?: "Sonde $probeId",
+            onBack = onBack,
+            actions = {
+                if (probe?.alarm == true) {
+                    IconButton(onClick = { viewModel.muteAlarm() }) {
+                        Icon(Icons.Default.NotificationsOff, contentDescription = null)
                     }
-                },
-                actions = {
-                    if (probe?.alarm == true) {
-                        IconButton(onClick = { viewModel.muteAlarm() }) {
-                            Icon(Icons.Default.NotificationsOff, contentDescription = null)
-                        }
-                    }
-                    IconButton(onClick = { showRenameDialog = true }) {
-                        Icon(
-                            Icons.Default.DriveFileRenameOutline,
-                            contentDescription = stringResource(R.string.rename_probe),
-                        )
-                    }
-                },
-            )
-        },
-    ) { padding ->
+                }
+                IconButton(onClick = { showRenameDialog = true }) {
+                    Icon(
+                        Icons.Default.DriveFileRenameOutline,
+                        contentDescription = stringResource(R.string.rename_probe),
+                    )
+                }
+            },
+        )
         Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
