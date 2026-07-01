@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.NetworkWifi
 import androidx.compose.material.icons.filled.Add
@@ -35,6 +36,9 @@ import java.util.Date
 fun DeviceSelectorScreen(
     onDeviceConnected: () -> Unit,
     onAddNewDevice: () -> Unit,
+    /** Non-null when the selector was opened from within the app (Settings / dashboard) and
+     *  there is somewhere to return to. Null on first run, where it is the start destination. */
+    onBack: (() -> Unit)? = null,
     viewModel: DeviceSelectorViewModel = hiltViewModel(),
 ) {
     val devices by viewModel.knownDevices.collectAsStateWithLifecycle()
@@ -99,7 +103,16 @@ fun DeviceSelectorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.select_device_title)) })
+            TopAppBar(
+                title = { Text(stringResource(R.string.select_device_title)) },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    }
+                },
+            )
         },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {

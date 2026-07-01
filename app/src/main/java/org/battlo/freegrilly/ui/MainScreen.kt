@@ -85,6 +85,11 @@ fun MainScreen(
                     onAddNewDevice = {
                         navController.navigate(Screen.Onboarding.route)
                     },
+                    // Show a back arrow only when opened from inside the app (Settings / dashboard),
+                    // not when this is the first-run start destination with nothing to pop.
+                    onBack = if (navController.previousBackStackEntry != null) {
+                        { navController.popBackStack() }
+                    } else null,
                 )
             }
             composable(Screen.Dashboard.route) {
@@ -130,6 +135,7 @@ fun MainScreen(
                     onBack = { navController.popBackStack() },
                     onNavigateToOnboarding = { navController.navigate(Screen.Onboarding.route) },
                     onNavigateToStatus = { navController.navigate(Screen.DeviceStatus.route) },
+                    onNavigateToDeviceSelector = { navController.navigate(Screen.DeviceSelector.route) },
                 )
             }
             composable(Screen.DeviceStatus.route) {
