@@ -9,6 +9,7 @@ import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.hasFlag
+import org.battlo.freegrilly.util.LocaleHelper
 import javax.inject.Inject
 
 @HiltViewModel
@@ -62,7 +63,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setLanguage(lang: String) = viewModelScope.launch { deviceStore.setAppLanguage(lang) }
+    fun setLanguage(lang: String) {
+        // Actually change the running app's locale (this used to only persist the preference —
+        // nothing ever applied it, so picking a language had no visible effect). The UI layer
+        // still needs to recreate the current activity for the new strings to show immediately
+        // on API < 33 (MainActivity is a plain ComponentActivity, not AppCompatActivity, so
+        // AppCompat can't auto-recreate it the way it would for an AppCompatActivity).
+        LocaleHelper.applyLanguage(lang)
+        viewModelScope.launch { deviceStore.setAppLanguage(lang) }
+    }
 
     fun exitDemoMode() = viewModelScope.launch { deviceStore.setDemoMode(false) }
 }
