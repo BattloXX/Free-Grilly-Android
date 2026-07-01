@@ -44,6 +44,12 @@ class GrillyRepository @Inject constructor(
     // sample is recent — so a cook survives app restarts and device reboots.
     private val SESSION_RESUME_GAP_MS = 60 * 60_000L
 
+    // The grill runs a single-threaded web server: when several phones poll the same device at
+    // once, an occasional request loses the race and times out even though the device is fine.
+    // Tolerate a few consecutive misses before showing "Disconnected" so a second device doesn't
+    // make the dashboard flicker offline. At the 1-s poll cadence this is a ~few-second grace.
+    private val MAX_POLL_FAILURES = 4
+
     // Populated from /api/info after connecting. Empty = unknown (original firmware).
     private val _capabilitiesFlow = MutableStateFlow<Set<String>>(emptySet())
     val capabilitiesFlow: StateFlow<Set<String>> = _capabilitiesFlow.asStateFlow()
@@ -94,9 +100,11 @@ class GrillyRepository @Inject constructor(
 
             // Default: 1-second polling (original firmware or SSE stream ended).
             Log.d(TAG, "Starting 1-second polling loop")
+            var consecutiveFailures = 0
             while (isActive) {
                 try {
                     val status = api.getGrillStatus()
+                    consecutiveFailures = 0
                     appendAndPersist(status)
                     _statusFlow.value = GrillyUiState.Connected(
                         status = status,
@@ -108,7 +116,12 @@ class GrillyRepository @Inject constructor(
                         alarmController.onAlarmCleared()
                     }
                 } catch (_: Exception) {
-                    if (_statusFlow.value !is GrillyUiState.Disconnected) {
+                    // A single miss is expected under multi-device contention — only flip to
+                    // Disconnected after several consecutive failures (see MAX_POLL_FAILURES).
+                    consecutiveFailures++
+                    if (consecutiveFailures >= MAX_POLL_FAILURES &&
+                        _statusFlow.value !is GrillyUiState.Disconnected
+                    ) {
                         _statusFlow.value = GrillyUiState.Disconnected
                     }
                 }
