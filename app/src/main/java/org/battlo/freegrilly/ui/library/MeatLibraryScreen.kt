@@ -5,7 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,8 +16,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
 import org.battlo.freegrilly.data.food.DonenessLevel
 import org.battlo.freegrilly.data.food.FoodItem
+import org.battlo.freegrilly.ui.components.CompactHeader
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MeatLibraryScreen(
     targetProbeId: Int? = null,
@@ -31,68 +30,56 @@ fun MeatLibraryScreen(
     val foods by viewModel.filteredFoods.collectAsStateWithLifecycle()
     var expandedFoodId by remember { mutableStateOf<String?>(null) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.meat_library)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.padding(padding).fillMaxSize()) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                leadingIcon = { Icon(Icons.Default.Search, null) },
-                label = { Text(stringResource(R.string.search)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+    Column(Modifier.fillMaxSize()) {
+        CompactHeader(stringResource(R.string.meat_library), onBack = onBack)
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { viewModel.setSearchQuery(it) },
+            leadingIcon = { Icon(Icons.Default.Search, null) },
+            label = { Text(stringResource(R.string.search)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
 
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                item {
-                    FilterChip(
-                        selected = selectedCategory == null,
-                        onClick = { viewModel.setCategory(null) },
-                        label = { Text(stringResource(R.string.all)) },
-                    )
-                }
-                items(categories) { cat ->
-                    FilterChip(
-                        selected = selectedCategory == cat,
-                        onClick = { viewModel.setCategory(cat) },
-                        label = { Text(cat.replaceFirstChar { it.uppercase() }) },
-                    )
-                }
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                FilterChip(
+                    selected = selectedCategory == null,
+                    onClick = { viewModel.setCategory(null) },
+                    label = { Text(stringResource(R.string.all)) },
+                )
             }
+            items(categories) { cat ->
+                FilterChip(
+                    selected = selectedCategory == cat,
+                    onClick = { viewModel.setCategory(cat) },
+                    label = { Text(cat.replaceFirstChar { it.uppercase() }) },
+                )
+            }
+        }
 
-            Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(4.dp))
 
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(foods, key = { it.id }) { food ->
-                    FoodItemCard(
-                        food = food,
-                        targetProbeId = targetProbeId,
-                        isExpanded = expandedFoodId == food.id,
-                        onToggle = { expandedFoodId = if (expandedFoodId == food.id) null else food.id },
-                        onAssign = { doneness ->
-                            if (targetProbeId != null) {
-                                viewModel.assignToProbe(targetProbeId, food, doneness.targetC, doneness.minC)
-                                onBack()
-                            }
-                        },
-                    )
-                }
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(foods, key = { it.id }) { food ->
+                FoodItemCard(
+                    food = food,
+                    targetProbeId = targetProbeId,
+                    isExpanded = expandedFoodId == food.id,
+                    onToggle = { expandedFoodId = if (expandedFoodId == food.id) null else food.id },
+                    onAssign = { doneness ->
+                        if (targetProbeId != null) {
+                            viewModel.assignToProbe(targetProbeId, food, doneness.targetC, doneness.minC)
+                            onBack()
+                        }
+                    },
+                )
             }
         }
     }

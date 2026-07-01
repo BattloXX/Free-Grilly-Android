@@ -3,8 +3,6 @@ package org.battlo.freegrilly.ui.settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,11 +12,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
+import org.battlo.freegrilly.ui.components.CompactHeader
 import org.battlo.freegrilly.ui.update.DeviceOtaSection
 import org.battlo.freegrilly.ui.update.UpdateSection
 import org.battlo.freegrilly.ui.update.UpdateViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -39,21 +37,10 @@ fun SettingsScreen(
         if (supportsPowerSaving) viewModel.loadPowerSavingState()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.nav_settings)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(Modifier.fillMaxSize()) {
+        CompactHeader(stringResource(R.string.nav_settings), onBack = onBack)
         Column(
             modifier = Modifier
-                .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
