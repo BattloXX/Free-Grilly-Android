@@ -7,6 +7,8 @@ Native Android-App für das **Free-Grilly** Grillthermometer (BattloXX-Fork der 
 
 > **Firmware:** Diese App funktioniert mit der [BattloXX/free-grilly](https://github.com/BattloXX/free-grilly) Firmware.
 
+> ⚠️ **Hinweis zu Google Play Protect:** Beim Installieren stuft Android/Play Protect die APK möglicherweise als „schädlich" ein. Grund ist nicht der tatsächliche Code, sondern das Verhaltensmuster: Die App wird außerhalb des Play Stores verteilt (Sideload) *und* lädt bei Updates selbstständig eine neue APK herunter und bietet sie zur Installation an (`REQUEST_INSTALL_PACKAGES`) — genau dieses Muster nutzt Play Protect als Heuristik für Dropper/Trojaner, unabhängig davon, was die App wirklich tut. Der Quellcode ist hier vollständig einsehbar; die App kommuniziert ausschließlich mit dem Grillgerät im lokalen WLAN und mit der GitHub-API (für Update-Checks). Wer unsicher ist, kann den Code selbst prüfen/bauen oder den Fehlalarm [bei Google melden](https://support.google.com/googleplay/protect/answer/9059445).
+
 ---
 
 ## Installation
@@ -79,6 +81,8 @@ Native Android app for the **Free-Grilly** grill thermometer (BattloXX fork of t
 [![Release](https://img.shields.io/github/v/release/BattloXX/Free-Grilly-Android)](https://github.com/BattloXX/Free-Grilly-Android/releases/latest)
 
 > **Firmware:** This app works with the [BattloXX/free-grilly](https://github.com/BattloXX/free-grilly) firmware.
+
+> ⚠️ **Note on Google Play Protect:** Android/Play Protect may flag the APK as "harmful" during install. This isn't about the actual code — it's a behavioral pattern match: the app is distributed outside the Play Store (sideload) *and* downloads a new APK on update and offers it for installation (`REQUEST_INSTALL_PACKAGES`) — exactly the pattern Play Protect's heuristics use to catch droppers/trojans, regardless of what the app actually does. The source is fully available here; the app only talks to the grill device on the local Wi-Fi and to the GitHub API (for update checks). If in doubt, review/build the code yourself, or [report the false positive to Google](https://support.google.com/googleplay/protect/answer/9059445).
 
 ## Installation
 
