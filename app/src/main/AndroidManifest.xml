@@ -31,6 +31,11 @@
     <!-- In-app update: allow installing APKs from unknown sources -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- usesCleartextTraffic is required because the grill is reached over a DHCP-assigned LAN
+         IP or an mDNS ".local" host — Android's network security config has no IP-range/CIDR
+         matcher, so this can't be narrowed to "local network only" declaratively. The actual
+         restriction lives in BaseUrlInterceptor, which refuses any cleartext request whose host
+         isn't a private/link-local address or ".local" hostname. -->
     <application
         android:name=".FreeGrillyApp"
         android:allowBackup="true"
