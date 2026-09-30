@@ -25,6 +25,18 @@ object Capabilities {
     const val POWER_SAVING = "power_saving"
     /** In-app firmware OTA via PUT /update (ElegantOTA-compatible). */
     const val OTA          = "ota"
+    const val CLEAR_HISTORY = "clear_history"
+    const val ALARM_PROBES = "alarm_probes"
+    const val CALIBRATION_OFFSET = "calibration_offset"
+    const val DIAGNOSTICS = "diagnostics"
+
+    /** Firmware-specific capability names normalized to the app's names. */
+    fun normalize(flags: List<String>): Set<String> = flags.map {
+        when (it) {
+            "ota_upload" -> OTA
+            else -> it
+        }
+    }.toSet()
 }
 
 /**

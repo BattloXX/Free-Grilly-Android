@@ -32,6 +32,7 @@ fun DeviceOtaSection(
     val supportsOta by viewModel.supportsOta.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
     val colors = LocalGrillyColors.current
+    var adminPassword by remember { mutableStateOf("") }
 
     if (!supportsOta) return
 
@@ -158,8 +159,15 @@ fun DeviceOtaSection(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        OutlinedTextField(
+                            value = adminPassword,
+                            onValueChange = { adminPassword = it },
+                            label = { Text(stringResource(R.string.ota_admin_password_hint)) },
+                            supportingText = { Text(stringResource(R.string.ota_admin_password_optional)) },
+                            singleLine = true,
+                        )
                         Button(
-                            onClick = { viewModel.uploadFirmware(s.file, s.info) },
+                            onClick = { viewModel.uploadFirmware(s.file, s.info, adminPassword) },
                             colors = ButtonDefaults.buttonColors(containerColor = colors.emberOrange),
                             modifier = Modifier.fillMaxWidth(),
                         ) {

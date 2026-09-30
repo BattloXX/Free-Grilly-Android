@@ -52,6 +52,7 @@ class NsdDiscovery @Inject constructor(
 
     private var nsdManager: NsdManager? = null
     private var freeGrillyListener: NsdManager.DiscoveryListener? = null
+    private var grillyPlusListener: NsdManager.DiscoveryListener? = null
     private var legacyHttpListener: NsdManager.DiscoveryListener? = null
     /** Held during active NSD scans to ensure mDNS multicast packets reach the app. */
     private var multicastLock: WifiManager.MulticastLock? = null
@@ -77,6 +78,10 @@ class NsdDiscovery @Inject constructor(
         runCatching {
             mgr.discoverServices("_free-grilly._tcp", NsdManager.PROTOCOL_DNS_SD, freeGrillyListener)
         }.onFailure { Log.w(TAG, "free-grilly discovery failed: $it") }
+        grillyPlusListener = makeListener(mgr, legacy = false, grillyPlus = true, targetUuid = targetUuid)
+        runCatching {
+            mgr.discoverServices("_grilly-plus._tcp", NsdManager.PROTOCOL_DNS_SD, grillyPlusListener)
+        }.onFailure { Log.w(TAG, "grilly-plus discovery failed: $it") }
 
         if (includeOriginal) {
             legacyHttpListener = makeListener(mgr, legacy = true, targetUuid = targetUuid)
@@ -88,8 +93,10 @@ class NsdDiscovery @Inject constructor(
 
     fun stopDiscovery() {
         runCatching { freeGrillyListener?.let { nsdManager?.stopServiceDiscovery(it) } }
+        runCatching { grillyPlusListener?.let { nsdManager?.stopServiceDiscovery(it) } }
         runCatching { legacyHttpListener?.let { nsdManager?.stopServiceDiscovery(it) } }
         freeGrillyListener = null
+        grillyPlusListener = null
         legacyHttpListener = null
         _state.value = DiscoveryState.Idle
         _discoveredDevices.value = emptyList()
@@ -101,6 +108,7 @@ class NsdDiscovery @Inject constructor(
     private fun makeListener(
         mgr: NsdManager,
         legacy: Boolean,
+        grillyPlus: Boolean = false,
         targetUuid: String?,
     ) = object : NsdManager.DiscoveryListener {
 
@@ -116,7 +124,7 @@ class NsdDiscovery @Inject constructor(
                         n.contains("freegrilly", ignoreCase = true)
                 if (!isGrilleye) return
             }
-            mgr.resolveService(service, makeResolveListener(legacy, targetUuid))
+            mgr.resolveService(service, makeResolveListener(legacy, grillyPlus, targetUuid))
         }
 
         override fun onServiceLost(service: NsdServiceInfo) {
@@ -133,6 +141,7 @@ class NsdDiscovery @Inject constructor(
 
     private fun makeResolveListener(
         legacy: Boolean,
+        grillyPlus: Boolean,
         targetUuid: String?,
     ) = object : NsdManager.ResolveListener {
         override fun onResolveFailed(si: NsdServiceInfo, code: Int) {
@@ -148,10 +157,11 @@ class NsdDiscovery @Inject constructor(
                 if (addr.contains(':')) return  // IPv6 — skip, wait for IPv4 result
                 addr
             }
-            val name = si.serviceName ?: if (legacy) "Grilleye" else "Free-Grilly"
+            val name = si.attributes?.get("name")?.let { String(it) } ?: si.serviceName
+                ?: if (legacy) "Grilleye" else if (grillyPlus) "Grilly+" else "Free-Grilly"
             val uuid = si.attributes?.get("uuid")?.let { String(it) } ?: ""
             if (targetUuid != null && uuid.isNotEmpty() && uuid != targetUuid) return
-            val variant = if (legacy) "original" else "free_grilly"
+            val variant = if (legacy) "original" else if (grillyPlus) "grilly_plus" else "free_grilly"
             _state.value = DiscoveryState.Found(
                 ip = ip,
                 name = name,

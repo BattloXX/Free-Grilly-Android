@@ -13,6 +13,9 @@ interface GrillyApiService {
     @POST("/api/probes")
     suspend fun updateProbes(@Body probes: List<ProbeConfig>): SuccessResponse
 
+    @POST("/api/probes")
+    suspend fun patchGrillyPlusProbes(@Body probes: List<GrillyPlusProbePatch>): SuccessResponse
+
     @GET("/api/settings")
     suspend fun getSettings(): DeviceSettings
 
@@ -21,6 +24,12 @@ interface GrillyApiService {
 
     @GET("/api/probes/history")
     suspend fun getHistory(): HistoryResponse
+
+    @GET("/api/history")
+    suspend fun getGrillyPlusHistory(): GrillyPlusHistoryResponse
+
+    @POST("/api/history/clear")
+    suspend fun clearGrillyPlusHistory(@Body body: Map<String, Int>): SuccessResponse
 
     @POST("/api/alarm/mute")
     suspend fun muteAlarm(@Body body: Map<String, String> = emptyMap()): SuccessResponse
@@ -39,4 +48,12 @@ interface GrillyApiService {
     @Multipart
     @PUT("/update")
     suspend fun uploadFirmware(@Part firmware: MultipartBody.Part): SuccessResponse
+
+    @Multipart
+    @POST("/api/update")
+    suspend fun uploadGrillyPlusFirmware(
+        @Header("X-Grilly-Update") updateHeader: String = "1",
+        @Header("Authorization") authorization: String? = null,
+        @Part firmware: MultipartBody.Part,
+    ): SuccessResponse
 }

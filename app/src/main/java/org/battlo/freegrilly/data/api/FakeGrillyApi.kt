@@ -98,6 +98,10 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
         )
     }
 
+    override suspend fun getGrillyPlusHistory() = GrillyPlusHistoryResponse()
+
+    override suspend fun clearGrillyPlusHistory(body: Map<String, Int>) = SuccessResponse(success = true)
+
     override suspend fun muteAlarm(body: Map<String, String>) = SuccessResponse(success = true)
 
     override suspend fun getInfo() = DeviceInfo(
@@ -116,5 +120,10 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
 
     // §8 — OTA stub (demo: always returns success, no real upload)
     override suspend fun uploadFirmware(firmware: MultipartBody.Part) =
+        SuccessResponse(success = true, message = "Demo OTA: no-op")
+
+    override suspend fun patchGrillyPlusProbes(probes: List<GrillyPlusProbePatch>) = SuccessResponse(success = true)
+
+    override suspend fun uploadGrillyPlusFirmware(updateHeader: String, authorization: String?, firmware: MultipartBody.Part) =
         SuccessResponse(success = true, message = "Demo OTA: no-op")
 }
