@@ -22,6 +22,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.GrillyRepository
+import org.battlo.freegrilly.data.FirmwareVariant
 import org.battlo.freegrilly.data.api.GrillyApiService
 import org.battlo.freegrilly.data.hasFlag
 import org.battlo.freegrilly.data.update.DeviceFirmwareChecker
@@ -140,20 +141,26 @@ class DeviceOtaViewModel @Inject constructor(
         }
     }
 
-    fun uploadFirmware(file: File, info: DeviceFirmwareInfo) {
+    fun uploadFirmware(file: File, info: DeviceFirmwareInfo, adminPassword: String = "") {
         _state.value = OtaState.Uploading(0, info)
         viewModelScope.launch {
             runCatching {
                 val requestBody = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
                 val part = MultipartBody.Part.createFormData("firmware", file.name, requestBody)
-                api.uploadFirmware(part)
+                if (repository.firmwareVariant == FirmwareVariant.GRILLY_PLUS) {
+                    val auth = adminPassword.takeIf { it.isNotEmpty() }?.let {
+                        "Basic " + android.util.Base64.encodeToString("admin:$it".toByteArray(), android.util.Base64.NO_WRAP)
+                    }
+                    api.uploadGrillyPlusFirmware(authorization = auth, firmware = part)
+                } else api.uploadFirmware(part)
             }.onSuccess {
                 Log.d(TAG, "OTA upload success")
                 _state.value = OtaState.Done(info)
                 file.delete()
             }.onFailure { e ->
                 Log.w(TAG, "OTA upload failed", e)
-                _state.value = OtaState.Error("Upload fehlgeschlagen: ${e.message}")
+                val detail = if (e is retrofit2.HttpException && e.code() == 401) "Admin-Passwort fehlt oder ist falsch." else e.message
+                _state.value = OtaState.Error("Upload fehlgeschlagen: $detail")
             }
         }
     }

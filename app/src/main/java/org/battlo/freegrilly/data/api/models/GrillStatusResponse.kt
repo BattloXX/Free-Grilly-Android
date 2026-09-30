@@ -20,7 +20,9 @@ data class GrillStatusResponse(
     @SerialName("wifi_connected") val wifiConnected: Boolean = false,
     @SerialName("wifi_signal") val wifiSignal: Int = -100,
     @SerialName("alarm_active") val alarmActive: Boolean = false,
+    @SerialName("alarm_sounding") val alarmSounding: Boolean = false,
     @SerialName("mdns_hostname") val mdnsHostname: String = "",
+    @SerialName("hostname") val hostname: String = "",
     /** epiecs firmware returns "firmware_version" in /api/grill instead of a dedicated /api/info */
     @SerialName("firmware_version") val legacyFirmwareVersion: String = "",
     val probes: List<ProbeStatus> = emptyList()
@@ -29,16 +31,24 @@ data class GrillStatusResponse(
     val resolvedUuid: String get() = uuid.ifBlank { uniqueId }
     /** Resolved firmware version: BattloXX → via /api/info; epiecs fallback → this field */
     val resolvedFirmware: String get() = legacyFirmwareVersion
+    val resolvedHostname: String get() = mdnsHostname.ifBlank { hostname }
+    val isAlarmSounding: Boolean get() = alarmActive || alarmSounding
 }
 
 @Serializable
 data class ProbeStatus(
     val id: Int = 0,
+    @SerialName("probe_id") val probeId: Int = 0,
     val name: String = "",
     val connected: Boolean = false,
-    val temperature: Float = 0f,
-    @SerialName("target_temperature") val targetTemperature: Float = 0f,
-    @SerialName("minimum_temperature") val minimumTemperature: Float = 0f,
+    val temperature: Float? = 0f,
+    @SerialName("target_temperature") val targetTemperature: Float? = 0f,
+    @SerialName("minimum_temperature") val minimumTemperature: Float? = 0f,
     val alarm: Boolean = false,
     @SerialName("eta_seconds") val etaSeconds: Int = -1
-)
+) {
+    val resolvedId: Int get() = id.takeIf { it != 0 } ?: probeId
+    val resolvedTemperature: Float get() = temperature ?: 0f
+    val resolvedTargetTemperature: Float get() = targetTemperature ?: 0f
+    val resolvedMinimumTemperature: Float get() = minimumTemperature ?: 0f
+}

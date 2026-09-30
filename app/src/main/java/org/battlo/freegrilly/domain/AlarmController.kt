@@ -54,7 +54,7 @@ class AlarmController @Inject constructor(
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_thermometer)
             .setContentTitle("${probe.name} ist fertig!")
-            .setContentText("${probe.name} hat ${probe.targetTemperature.toInt()}°C erreicht")
+            .setContentText("${probe.name} hat ${probe.resolvedTargetTemperature.toInt()}°C erreicht")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pi)
             .setAutoCancel(true)

@@ -18,3 +18,21 @@ data class ProbeHistory(
     /** Coarse tier (whole cook). Empty on old firmware. */
     @SerialName("history_coarse") val historyCoarse: List<Int> = emptyList()
 )
+
+/** Grilly+ history is split into tiers with explicit age and nullable gaps. */
+@Serializable
+data class GrillyPlusHistoryResponse(val probes: List<GrillyPlusProbeHistory> = emptyList())
+
+@Serializable
+data class GrillyPlusProbeHistory(
+    @SerialName("probe_id") val probeId: Int,
+    val coarse: GrillyPlusHistoryTier? = null,
+    val fine: GrillyPlusHistoryTier? = null,
+)
+
+@Serializable
+data class GrillyPlusHistoryTier(
+    val interval: Int = 0,
+    val age: Int = 0,
+    val values: List<Int?> = emptyList(),
+)

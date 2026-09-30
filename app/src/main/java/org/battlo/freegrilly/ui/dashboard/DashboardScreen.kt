@@ -134,8 +134,8 @@ fun DashboardScreen(
                             ProbeCard(
                                 probe = probe,
                                 unit = unit,
-                                historyData = history[probe.id] ?: emptyList(),
-                                onClick = { if (probe.connected) onProbeClick(probe.id) },
+                                historyData = history[probe.resolvedId] ?: emptyList(),
+                                onClick = { if (probe.connected) onProbeClick(probe.resolvedId) },
                             )
                         }
                     }

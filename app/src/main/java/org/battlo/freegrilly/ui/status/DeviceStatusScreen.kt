@@ -183,6 +183,7 @@ private fun resetReasonText(code: String): String? = when (code) {
     "panic" -> stringResource(R.string.reset_panic)
     "int_wdt", "task_wdt", "wdt" -> stringResource(R.string.reset_watchdog)
     "sw" -> stringResource(R.string.reset_sw)
+    "factory_reset" -> stringResource(R.string.reset_factory_reset)
     "" -> null
     // Unknown/other codes: show the raw value rather than hiding it (still useful info).
     else -> code
@@ -194,6 +195,8 @@ private fun offReasonText(code: String): String? = when (code) {
     "button" -> stringResource(R.string.off_button)
     "low_battery" -> stringResource(R.string.off_low_battery)
     "boot_gate" -> stringResource(R.string.off_boot_gate)
+    "update" -> stringResource(R.string.off_update)
+    "factory_reset" -> stringResource(R.string.off_factory_reset)
     "" -> null
     else -> code
 }

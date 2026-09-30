@@ -11,7 +11,7 @@
     <!-- Onboarding -->
     <string name="onboarding_setup">Gerät einrichten</string>
     <string name="step_ap_connect_title">Mit Griller verbinden</string>
-    <string name="step_ap_connect_desc">Verbinde dein Smartphone mit dem WLAN-Netzwerk deines Grillers (FreeGrilly_xxxxxxxx oder Grilleye_xxxxxxxx) und kehre dann hierher zurück.</string>
+    <string name="step_ap_connect_desc">Verbinde dein Smartphone mit dem WLAN-Netzwerk deines Grillers (FreeGrilly_xxxxxxxx, GrillyPlus_XXXXXX oder Grilleye_xxxxxxxx) und kehre dann hierher zurück. Das Grilly+-Hotspot-Passwort steht auf dem Geräte-Infoscreen.</string>
     <string name="connected_continue">Verbunden – weiter</string>
     <string name="use_demo_mode">Demo-Modus verwenden</string>
     <string name="scanning_wifi">Suche WLAN-Netzwerke …</string>
@@ -39,6 +39,7 @@
     <string name="target_temperature_label">Zieltemperatur (°C)</string>
     <string name="save">Speichern</string>
     <string name="cancel">Abbrechen</string>
+    <string name="clear_history">Verlauf löschen</string>
 
     <!-- Library -->
     <string name="meat_library">Grillgut-Bibliothek</string>
@@ -85,10 +86,13 @@
     <string name="reset_panic">Absturz</string>
     <string name="reset_watchdog">Watchdog</string>
     <string name="reset_sw">Software-Neustart</string>
+    <string name="reset_factory_reset">Werkseinstellung</string>
     <!-- Abschalt-Gründe -->
     <string name="off_button">Knopf</string>
     <string name="off_low_battery">Akkuschutz (fast leer)</string>
     <string name="off_boot_gate">Einschalten nicht bestätigt</string>
+    <string name="off_update">Firmware-Update</string>
+    <string name="off_factory_reset">Werkseinstellung</string>
     <string name="status_unit">Einheit</string>
     <string name="status_probes_connected">Verbundene Sonden</string>
     <string name="status_connected">Verbunden</string>
@@ -136,6 +140,8 @@
     <string name="upload_firmware">Auf Gerät übertragen</string>
     <string name="uploading_firmware">Übertrage Firmware %1$s …</string>
     <string name="firmware_update_done">Firmware %1$s installiert</string>
+    <string name="ota_admin_password_hint">Admin-Passwort</string>
+    <string name="ota_admin_password_optional">Nur für geschützte Grilly+-Updates erforderlich.</string>
 
     <!-- §8 Power-Saving (nur sichtbar wenn Gerät power_saving-Capability meldet) -->
     <string name="settings_power_saving">Energiesparmodus</string>

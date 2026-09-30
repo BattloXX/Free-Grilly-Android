@@ -150,7 +150,7 @@ private fun CredentialsStep(
             ExposedDropdownMenu(expanded = expandSsid, onDismissRequest = { expandSsid = false }) {
                 networks.forEach { net ->
                     DropdownMenuItem(
-                        text = { Text("${net.ssid}  (${net.rssi} dBm, ${net.encryption})") },
+                        text = { Text("${net.ssid}  (${net.resolvedRssi} dBm, ${net.resolvedEncryption})") },
                         onClick = { selectedSsid = net.ssid; expandSsid = false },
                     )
                 }

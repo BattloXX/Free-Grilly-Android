@@ -42,7 +42,7 @@ fun ProbeCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = probe.name.ifEmpty { "Sonde ${probe.id}" },
+                    text = probe.name.ifEmpty { "Sonde ${probe.resolvedId}" },
                     style = MaterialTheme.typography.titleMedium,
                 )
                 if (!probe.connected) {
@@ -65,7 +65,7 @@ fun ProbeCard(
             if (probe.connected) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(
-                        text = TempUtils.format(probe.temperature, unit, 1),
+                        text = TempUtils.format(probe.resolvedTemperature, unit, 1),
                         fontSize = 40.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (probe.alarm) colors.criticalRed else colors.emberOrange,
@@ -73,7 +73,7 @@ fun ProbeCard(
                     Spacer(Modifier.width(8.dp))
                     Column {
                         Text(
-                            "→ ${TempUtils.format(probe.targetTemperature, unit, 0)}",
+                            "→ ${TempUtils.format(probe.resolvedTargetTemperature, unit, 0)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -90,7 +90,7 @@ fun ProbeCard(
                     Spacer(Modifier.height(8.dp))
                     Sparkline(
                         data = historyData,
-                        targetTemp = probe.targetTemperature,
+                        targetTemp = probe.resolvedTargetTemperature,
                         color = if (probe.alarm) colors.criticalRed else colors.emberOrange,
                         modifier = Modifier.fillMaxWidth().height(36.dp),
                     )

@@ -35,6 +35,7 @@ fun ProbeDetailScreen(
     val samples by viewModel.samples.collectAsStateWithLifecycle()
     val window by viewModel.window.collectAsStateWithLifecycle()
     val unit by viewModel.unit.collectAsStateWithLifecycle()
+    val supportsClearHistory by viewModel.supportsClearHistory.collectAsStateWithLifecycle()
     val colors = LocalGrillyColors.current
     var showTargetDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -71,13 +72,13 @@ fun ProbeDetailScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            TempUtils.format(p.temperature, unit, 1),
+                            TempUtils.format(p.resolvedTemperature, unit, 1),
                             fontSize = 64.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (p.alarm) colors.criticalRed else colors.emberOrange,
                         )
                         Text(
-                            "→ ${TempUtils.format(p.targetTemperature, unit, 0)}",
+                            "→ ${TempUtils.format(p.resolvedTargetTemperature, unit, 0)}",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -109,7 +110,7 @@ fun ProbeDetailScreen(
                             Spacer(Modifier.height(8.dp))
                             TimeSeriesChart(
                                 data = samples,
-                                targetTemp = p.targetTemperature.takeIf { it > 0f },
+                                targetTemp = p.resolvedTargetTemperature.takeIf { it > 0f },
                                 color = if (p.alarm) colors.criticalRed else colors.emberOrange,
                                 modifier = Modifier.fillMaxWidth().height(180.dp),
                                 strokeWidth = 2f,
@@ -130,6 +131,11 @@ fun ProbeDetailScreen(
                         Text(stringResource(R.string.assign_food))
                     }
                 }
+                if (supportsClearHistory) {
+                    TextButton(onClick = { viewModel.clearHistory() }) {
+                        Text(stringResource(R.string.clear_history))
+                    }
+                }
             } ?: Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
@@ -137,7 +143,7 @@ fun ProbeDetailScreen(
     }
 
     if (showTargetDialog) {
-        var targetInput by remember { mutableStateOf(probe?.targetTemperature?.toInt()?.toString() ?: "") }
+        var targetInput by remember { mutableStateOf(probe?.resolvedTargetTemperature?.toInt()?.toString() ?: "") }
         AlertDialog(
             onDismissRequest = { showTargetDialog = false },
             title = { Text(stringResource(R.string.edit_target)) },

@@ -9,6 +9,8 @@ import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
+import org.battlo.freegrilly.data.Capabilities
+import org.battlo.freegrilly.data.hasFlag
 import org.battlo.freegrilly.data.api.models.ProbeStatus
 import org.battlo.freegrilly.data.history.Downsample
 import org.battlo.freegrilly.data.history.TempSample
@@ -32,7 +34,7 @@ class ProbeDetailViewModel @Inject constructor(
     private val probeId: Int = savedStateHandle["probeId"] ?: 1
 
     val probe: StateFlow<ProbeStatus?> = repository.statusFlow
-        .map { state -> (state as? GrillyUiState.Connected)?.status?.probes?.find { it.id == probeId } }
+        .map { state -> (state as? GrillyUiState.Connected)?.status?.probes?.find { it.resolvedId == probeId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val windowState = MutableStateFlow(HistoryWindow.ALL)
@@ -54,7 +56,12 @@ class ProbeDetailViewModel @Inject constructor(
     val unit: StateFlow<String> = deviceStore.temperatureUnit
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "celcius")
 
+    val supportsClearHistory: StateFlow<Boolean> = repository.capabilitiesFlow
+        .map { it.hasFlag(Capabilities.CLEAR_HISTORY) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     fun muteAlarm() = viewModelScope.launch { repository.muteAlarm() }
+    fun clearHistory() = viewModelScope.launch { repository.clearHistory(probeId) }
 
     /**
      * Change only the target (and optional minimum). Probe type, name and thermistor

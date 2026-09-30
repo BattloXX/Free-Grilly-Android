@@ -59,7 +59,7 @@ class OnboardingViewModel @Inject constructor(
         if (networks.isNotEmpty()) {
             _step.value = OnboardingStep.Credentials(networks)
         } else {
-            _error.value = "Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-AP (FreeGrilly_xxxxxx) oder dem Grilleye-AP (Grilleye_xxxxxx) verbunden bist."
+            _error.value = "Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-AP, GrillyPlus-AP oder Grilleye-AP verbunden bist. Das Grilly+-Hotspot-Passwort steht auf dem Geräte-Infoscreen."
             _step.value = OnboardingStep.ApConnect
         }
     }
@@ -69,9 +69,13 @@ class OnboardingViewModel @Inject constructor(
             _step.value = OnboardingStep.Provisioning
             _isLoading.value = true
             runCatching {
+                // Both supported firmwares expose /api/info while in AP mode. Select the
+                // spelling before posting so strict Free-Grilly installations never see `name`.
+                val isGrillyPlus = api.getInfo().isGrillyPlus
                 api.updateSettings(
                     DeviceSettings(
-                        grillName = grillName,
+                        grillName = grillName.takeUnless { isGrillyPlus },
+                        name = grillName.takeIf { isGrillyPlus },
                         wifiSsid = ssid,
                         wifiPassword = password,
                         temperatureUnit = unit,
@@ -98,13 +102,14 @@ class OnboardingViewModel @Inject constructor(
                         // Fetch full device info to capture capabilities + firmware version.
                         val info = runCatching { api.getInfo() }.getOrNull()
                         val device = KnownDevice(
-                            uuid = info?.uuid ?: state.uuid.ifEmpty { state.ip },
+                            uuid = info?.resolvedUuid ?: state.uuid.ifEmpty { state.ip },
                             name = info?.name?.ifBlank { state.name } ?: state.name,
                             ip = state.ip,
-                            mdnsHostname = info?.mdnsHostname ?: state.name,
+                            mdnsHostname = info?.resolvedHostname ?: state.name,
                             lastSeen = System.currentTimeMillis(),
                             capabilities = info?.capabilities ?: emptyList(),
-                            firmwareVersion = info?.firmware ?: "",
+                            firmwareVersion = info?.resolvedFirmwareVersion ?: "",
+                            firmwareVariant = if (info?.isGrillyPlus == true) FirmwareVariant.GRILLY_PLUS else FirmwareVariant.FREE_GRILLY,
                         )
                         deviceStore.saveKnownDevice(device)
                         deviceStore.setSelectedDevice(device)
