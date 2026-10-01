@@ -53,6 +53,8 @@ class GrillyRepository @Inject constructor(
     // Populated from /api/info after connecting. Empty = unknown (original firmware).
     private val _capabilitiesFlow = MutableStateFlow<Set<String>>(emptySet())
     val capabilitiesFlow: StateFlow<Set<String>> = _capabilitiesFlow.asStateFlow()
+    private val _features = MutableStateFlow(DeviceFeatures())
+    val features: StateFlow<DeviceFeatures> = _features.asStateFlow()
 
     var activeCapabilities: Set<String> = emptySet()
         private set
@@ -60,6 +62,7 @@ class GrillyRepository @Inject constructor(
     fun setCapabilities(caps: List<String>) {
         activeCapabilities = Capabilities.normalize(caps)
         _capabilitiesFlow.value = activeCapabilities
+        _features.value = DeviceFeatures.from(activeCapabilities)
     }
 
     private val _statusFlow = MutableStateFlow<GrillyUiState>(GrillyUiState.Loading)
@@ -225,6 +228,10 @@ class GrillyRepository @Inject constructor(
     }
 
     suspend fun patchProbe(patch: ProbePatch): Result<Unit> = runCatching { deviceApiHolder.api.updateProbe(patch) }
+
+    /** Reads the probe configuration endpoint, including calibration offset when supported. */
+    suspend fun getProbe(probeId: Int): Probe? =
+        runCatching { deviceApiHolder.api.probes().firstOrNull { it.id == probeId } }.getOrNull()
 
     suspend fun updateSettings(
         grillName: String? = null,

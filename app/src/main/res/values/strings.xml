@@ -40,6 +40,10 @@
     <string name="save">Speichern</string>
     <string name="cancel">Abbrechen</string>
     <string name="clear_history">Verlauf löschen</string>
+    <string name="probe_calibration">Sonden-Kalibrierung</string>
+    <string name="probe_calibration_description">Korrigiert die gemessene Temperatur. Der Offset wird in °C an die Sonde gesendet.</string>
+    <string name="probe_calibration_decrease">Offset um 0,1 verringern</string>
+    <string name="probe_calibration_increase">Offset um 0,1 erhöhen</string>
 
     <!-- Library -->
     <string name="meat_library">Grillgut-Bibliothek</string>
@@ -68,6 +72,9 @@
     <string name="status_state">Status</string>
     <string name="status_name">Name</string>
     <string name="status_firmware">Firmware</string>
+    <string name="status_firmware_name">Firmware-Name</string>
+    <string name="status_firmware_version">Firmware-Version</string>
+    <string name="status_api_version">API-Version</string>
     <string name="status_uuid">UUID</string>
     <string name="status_mdns">mDNS-Hostname</string>
     <string name="status_ip">IP-Adresse</string>
@@ -75,6 +82,7 @@
     <string name="status_wifi_signal">Signalstärke</string>
     <string name="status_battery">Akku</string>
     <string name="status_charging">lädt</string>
+    <string name="status_not_charging">lädt nicht</string>
     <string name="status_battery_voltage">Zellspannung</string>
     <string name="status_section_diagnostics">Diagnose</string>
     <string name="status_last_reset">Letzter Neustart</string>

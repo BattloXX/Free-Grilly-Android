@@ -24,6 +24,7 @@ fun DeviceStatusScreen(
     viewModel: DeviceStatusViewModel = hiltViewModel(),
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val rows = remember(ui) { DeviceStatusRows.from(ui) }
     val dash = stringResource(R.string.status_value_unknown)
 
     Scaffold(
@@ -57,56 +58,39 @@ fun DeviceStatusScreen(
                 else -> stringResource(R.string.disconnected)
             }
 
+            val identityRows = rows.filter { it.kind in setOf(
+                DeviceStatusRow.Kind.NAME, DeviceStatusRow.Kind.FIRMWARE_NAME,
+                DeviceStatusRow.Kind.FIRMWARE_VERSION, DeviceStatusRow.Kind.API_VERSION,
+                DeviceStatusRow.Kind.UUID, DeviceStatusRow.Kind.MDNS_HOSTNAME,
+            ) }
             StatusCard(stringResource(R.string.status_section_identity)) {
                 StatusRow(stringResource(R.string.status_state), state)
-                StatusRow(stringResource(R.string.status_name), ui.name.ifBlank { dash })
-                StatusRow(stringResource(R.string.status_firmware), ui.firmware.ifBlank { dash })
-                StatusRow(stringResource(R.string.status_uuid), ui.uuid.ifBlank { dash })
-                StatusRow(stringResource(R.string.status_mdns), ui.mdnsHostname.ifBlank { dash })
+                identityRows.forEach { StatusRow(statusLabel(it.kind), it.value) }
             }
 
-            StatusCard(stringResource(R.string.status_section_network)) {
-                StatusRow(stringResource(R.string.status_ip), ui.ipAddress.ifBlank { dash })
-                StatusRow(
-                    stringResource(R.string.status_wifi),
-                    if (ui.wifiConnected) stringResource(R.string.status_connected)
-                    else stringResource(R.string.disconnected),
-                )
-                StatusRow(
-                    stringResource(R.string.status_wifi_signal),
-                    if (ui.connected) "${ui.wifiSignalDbm} dBm (${wifiPercent(ui.wifiSignalDbm)}%)" else dash,
-                )
+            val networkRows = rows.filter { it.kind in setOf(
+                DeviceStatusRow.Kind.IP_ADDRESS, DeviceStatusRow.Kind.WIFI_CONNECTED, DeviceStatusRow.Kind.WIFI_RSSI,
+            ) }
+            if (networkRows.isNotEmpty()) StatusCard(stringResource(R.string.status_section_network)) {
+                networkRows.forEach { StatusRow(statusLabel(it.kind), statusValue(it)) }
             }
 
-            StatusCard(stringResource(R.string.status_section_power)) {
-                StatusRow(
-                    stringResource(R.string.status_battery),
-                    if (ui.connected) {
-                        val charging = if (ui.batteryCharging) " · ${stringResource(R.string.status_charging)}" else ""
-                        "${ui.batteryPercent}%$charging"
-                    } else dash,
-                )
-                // Cell voltage: diagnostics for a miscalibrated gauge (firmware ≥26.07.01).
-                if (ui.connected && ui.batteryMillivolts > 0) {
-                    StatusRow(
-                        stringResource(R.string.status_battery_voltage),
-                        "%.2f V".format(ui.batteryMillivolts / 1000f),
-                    )
-                }
+            val powerRows = rows.filter { it.kind in setOf(
+                DeviceStatusRow.Kind.BATTERY_PERCENT, DeviceStatusRow.Kind.BATTERY_VOLTAGE,
+                DeviceStatusRow.Kind.BATTERY_CHARGING,
+            ) }
+            if (powerRows.isNotEmpty()) StatusCard(stringResource(R.string.status_section_power)) {
+                powerRows.forEach { StatusRow(statusLabel(it.kind), statusValue(it)) }
             }
 
             // Diagnostics: why the device last reset / powered off. Only shown when the
             // firmware reports it (older firmware leaves these blank).
-            val resetText = resetReasonText(ui.lastResetReason)
-            val offText = offReasonText(ui.lastOffReason)
-            if (resetText != null || offText != null) {
+            val diagnosticsRows = rows.filter { it.kind in setOf(
+                DeviceStatusRow.Kind.LAST_RESET_REASON, DeviceStatusRow.Kind.LAST_OFF_REASON,
+            ) }
+            if (diagnosticsRows.isNotEmpty()) {
                 StatusCard(stringResource(R.string.status_section_diagnostics)) {
-                    if (resetText != null) {
-                        StatusRow(stringResource(R.string.status_last_reset), resetText)
-                    }
-                    if (offText != null) {
-                        StatusRow(stringResource(R.string.status_last_off), offText)
-                    }
+                    diagnosticsRows.forEach { StatusRow(statusLabel(it.kind), statusValue(it)) }
                 }
             }
 
@@ -173,6 +157,36 @@ private fun StatusRow(label: String, value: String) {
 
 /** dBm → rough percentage per the firmware API guide: percent = 140 + dBm, clamped 0–100. */
 private fun wifiPercent(dbm: Int): Int = (140 + dbm).coerceIn(0, 100)
+
+@Composable
+private fun statusLabel(kind: DeviceStatusRow.Kind): String = when (kind) {
+    DeviceStatusRow.Kind.NAME -> stringResource(R.string.status_name)
+    DeviceStatusRow.Kind.FIRMWARE_NAME -> stringResource(R.string.status_firmware_name)
+    DeviceStatusRow.Kind.FIRMWARE_VERSION -> stringResource(R.string.status_firmware_version)
+    DeviceStatusRow.Kind.API_VERSION -> stringResource(R.string.status_api_version)
+    DeviceStatusRow.Kind.UUID -> stringResource(R.string.status_uuid)
+    DeviceStatusRow.Kind.MDNS_HOSTNAME -> stringResource(R.string.status_mdns)
+    DeviceStatusRow.Kind.IP_ADDRESS -> stringResource(R.string.status_ip)
+    DeviceStatusRow.Kind.WIFI_CONNECTED -> stringResource(R.string.status_wifi)
+    DeviceStatusRow.Kind.WIFI_RSSI -> stringResource(R.string.status_wifi_signal)
+    DeviceStatusRow.Kind.BATTERY_PERCENT -> stringResource(R.string.status_battery)
+    DeviceStatusRow.Kind.BATTERY_VOLTAGE -> stringResource(R.string.status_battery_voltage)
+    DeviceStatusRow.Kind.BATTERY_CHARGING -> stringResource(R.string.status_charging)
+    DeviceStatusRow.Kind.LAST_RESET_REASON -> stringResource(R.string.status_last_reset)
+    DeviceStatusRow.Kind.LAST_OFF_REASON -> stringResource(R.string.status_last_off)
+}
+
+@Composable
+private fun statusValue(row: DeviceStatusRow): String = when (row.kind) {
+    DeviceStatusRow.Kind.WIFI_CONNECTED -> if (row.value.toBoolean()) stringResource(R.string.status_connected) else stringResource(R.string.disconnected)
+    DeviceStatusRow.Kind.WIFI_RSSI -> "${row.value} dBm (${wifiPercent(row.value.toInt())}%)"
+    DeviceStatusRow.Kind.BATTERY_PERCENT -> "${row.value}%"
+    DeviceStatusRow.Kind.BATTERY_VOLTAGE -> "%.2f V".format(row.value.toInt() / 1000f)
+    DeviceStatusRow.Kind.BATTERY_CHARGING -> if (row.value.toBoolean()) stringResource(R.string.status_charging) else stringResource(R.string.status_not_charging)
+    DeviceStatusRow.Kind.LAST_RESET_REASON -> resetReasonText(row.value).orEmpty()
+    DeviceStatusRow.Kind.LAST_OFF_REASON -> offReasonText(row.value).orEmpty()
+    else -> row.value
+}
 
 /** Localized label for a firmware `last_reset_reason` code, or null when unknown/blank. */
 @Composable

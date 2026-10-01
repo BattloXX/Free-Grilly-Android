@@ -21,4 +21,10 @@ object TempUtils {
 
     fun displayTemp(celsius: Float, unit: String): Float =
         if (unit == "fahrenheit") celsiusToFahrenheit(celsius) else celsius
+
+    /** Formats a temperature difference; unlike an absolute temperature no 32° offset applies. */
+    fun formatOffset(celsius: Float, unit: String, decimals: Int = 1): String {
+        val display = if (unit == "fahrenheit") celsius * 9f / 5f else celsius
+        return "%+.${decimals}f °${unitSymbol(unit)}".format(display)
+    }
 }

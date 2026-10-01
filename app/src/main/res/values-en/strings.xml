@@ -40,6 +40,10 @@
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
     <string name="clear_history">Clear history</string>
+    <string name="probe_calibration">Probe calibration</string>
+    <string name="probe_calibration_description">Corrects the measured temperature. The offset is sent to the probe in °C.</string>
+    <string name="probe_calibration_decrease">Decrease offset by 0.1</string>
+    <string name="probe_calibration_increase">Increase offset by 0.1</string>
 
     <!-- Library -->
     <string name="meat_library">Food Library</string>
@@ -68,6 +72,9 @@
     <string name="status_state">Status</string>
     <string name="status_name">Name</string>
     <string name="status_firmware">Firmware</string>
+    <string name="status_firmware_name">Firmware name</string>
+    <string name="status_firmware_version">Firmware version</string>
+    <string name="status_api_version">API version</string>
     <string name="status_uuid">UUID</string>
     <string name="status_mdns">mDNS hostname</string>
     <string name="status_ip">IP address</string>
@@ -75,6 +82,7 @@
     <string name="status_wifi_signal">Signal strength</string>
     <string name="status_battery">Battery</string>
     <string name="status_charging">charging</string>
+    <string name="status_not_charging">not charging</string>
     <string name="status_battery_voltage">Cell voltage</string>
     <string name="status_section_diagnostics">Diagnostics</string>
     <string name="status_last_reset">Last restart</string>
