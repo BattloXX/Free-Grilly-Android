@@ -25,6 +25,8 @@ data class GrillStatusResponse(
     @SerialName("hostname") val hostname: String = "",
     /** epiecs firmware returns "firmware_version" in /api/grill instead of a dedicated /api/info */
     @SerialName("firmware_version") val legacyFirmwareVersion: String = "",
+    @SerialName("cook_session") val cookSession: CookSessionDto? = null,
+    @SerialName("cook_session_id") val cookSessionId: String? = null,
     val probes: List<ProbeStatus> = emptyList()
 ) {
     /** Resolved UUID: BattloXX firmware → "uuid", epiecs → "unique_id" */
@@ -33,7 +35,12 @@ data class GrillStatusResponse(
     val resolvedFirmware: String get() = legacyFirmwareVersion
     val resolvedHostname: String get() = mdnsHostname.ifBlank { hostname }
     val isAlarmSounding: Boolean get() = alarmActive || alarmSounding
+    val resolvedCookSessionId: String? get() = cookSession?.id?.takeIf { it.isNotBlank() }
+        ?: cookSessionId?.takeIf { it.isNotBlank() }
 }
+
+@Serializable
+data class CookSessionDto(val id: String? = null)
 
 @Serializable
 data class ProbeStatus(

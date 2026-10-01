@@ -100,6 +100,8 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
 
     override suspend fun getGrillyPlusHistory() = GrillyPlusHistoryResponse()
 
+    override suspend fun getGrillyPlusHistory(probeId: Int) = GrillyPlusHistoryResponse()
+
     override suspend fun clearGrillyPlusHistory(body: Map<String, Int>) = SuccessResponse(success = true)
 
     override suspend fun muteAlarm(body: Map<String, String>) = SuccessResponse(success = true)

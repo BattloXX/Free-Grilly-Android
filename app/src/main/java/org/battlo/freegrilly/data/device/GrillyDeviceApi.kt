@@ -6,6 +6,8 @@ import org.battlo.freegrilly.data.device.model.*
 
 interface GrillyDeviceApi {
     val capabilities: Set<String>
+    /** True only when imported history timestamps are stable across reconnects. */
+    val supportsHistoryGapFill: Boolean get() = false
     val firmwareUpdateSource: FirmwareUpdateSource get() = FirmwareUpdateSource("BattloXX", "Free-Grilly", false)
     suspend fun info(): DeviceIdentity
     suspend fun status(): GrillState

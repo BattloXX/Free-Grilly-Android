@@ -18,6 +18,12 @@ interface HistoryDao {
     @Query("SELECT * FROM cook_sessions WHERE deviceId = :deviceId ORDER BY startedAt DESC LIMIT 1")
     suspend fun latestSession(deviceId: String): CookSessionEntity?
 
+    @Query("SELECT * FROM cook_sessions WHERE deviceId = :deviceId AND firmwareSessionId = :firmwareSessionId ORDER BY startedAt DESC LIMIT 1")
+    suspend fun latestFirmwareSession(deviceId: String, firmwareSessionId: String): CookSessionEntity?
+
+    @Query("UPDATE cook_sessions SET endedAt = :endedAt WHERE id = :sessionId")
+    suspend fun closeSession(sessionId: Long, endedAt: Long)
+
     @Query("SELECT MAX(tsMs) FROM temp_samples WHERE sessionId = :sessionId")
     suspend fun lastSampleTs(sessionId: Long): Long?
 

@@ -21,6 +21,19 @@ class DeviceAdapterTest {
         val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; explicitNulls = false }
         val dto = json.decodeFromString<org.battlo.freegrilly.data.api.models.GrillStatusResponse>(fixture("grilly-plus-grill.json"))
         assertNull(dto.probes.single().temperature)
+        assertNull(dto.resolvedCookSessionId)
+    }
+
+    @Test fun `grill cook session accepts object and scalar forms`() {
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true; explicitNulls = false }
+        val objectForm = json.decodeFromString<org.battlo.freegrilly.data.api.models.GrillStatusResponse>(
+            fixture("grilly-plus-grill-cook-session.json")
+        )
+        val scalarForm = json.decodeFromString<org.battlo.freegrilly.data.api.models.GrillStatusResponse>(
+            "{\"cook_session_id\":\"cook-43\"}"
+        )
+        assertEquals("cook-42", objectForm.resolvedCookSessionId)
+        assertEquals("cook-43", scalarForm.resolvedCookSessionId)
     }
 
     @Test fun `plus info fixture identifies neutral firmware metadata`() {

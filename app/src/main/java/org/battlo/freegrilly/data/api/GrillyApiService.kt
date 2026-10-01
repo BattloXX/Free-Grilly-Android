@@ -28,6 +28,9 @@ interface GrillyApiService {
     @GET("/api/history")
     suspend fun getGrillyPlusHistory(): GrillyPlusHistoryResponse
 
+    @GET("/api/history")
+    suspend fun getGrillyPlusHistory(@Query("probe") probeId: Int): GrillyPlusHistoryResponse
+
     @POST("/api/history/clear")
     suspend fun clearGrillyPlusHistory(@Body body: Map<String, Int>): SuccessResponse
 

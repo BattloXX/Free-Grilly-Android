@@ -45,6 +45,8 @@ data class GrillState(
     val wifiConnected: Boolean? = null,
     val wifiSignalDbm: Int? = null,
     val alarmActive: Boolean = false,
+    /** Optional firmware cook id; absent on currently released Grilly+ firmware. */
+    val cookSessionId: String? = null,
     val probes: List<Probe> = emptyList(),
     val diagnostics: Diagnostics = Diagnostics(),
 ) {
