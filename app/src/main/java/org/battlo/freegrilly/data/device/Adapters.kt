@@ -31,7 +31,7 @@ import org.battlo.freegrilly.data.history.GrillyPlusHistoryMapper
 private fun DeviceInfo.identity() = DeviceIdentity(
     uuid = resolvedUuid, name = name, hostname = resolvedHostname,
     firmwareName = firmware, firmwareVersion = resolvedFirmwareVersion,
-    apiVersion = apiVersion.content, capabilities = Capabilities.normalize(capabilities),
+    apiVersion = apiVersion, capabilities = Capabilities.normalize(capabilities),
 )
 
 private fun GrillStatusResponse.state(identity: DeviceIdentity) = GrillState(

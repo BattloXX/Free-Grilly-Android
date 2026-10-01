@@ -124,6 +124,8 @@ class DeviceConnector @Inject constructor(
             lastSeen = System.currentTimeMillis(),
             capabilities = info?.capabilities ?: emptyList(),
             firmwareVersion = info?.resolvedFirmwareVersion?.ifBlank { status.resolvedFirmware } ?: status.resolvedFirmware,
+            apiVersion = info?.apiVersion.orEmpty(),
+            firmwareName = info?.firmware.orEmpty(),
             firmwareVariant = deviceApiHolder.firmwareVariant,
         )
         repository.setCapabilities(device.capabilities)
@@ -153,6 +155,8 @@ class DeviceConnector @Inject constructor(
                 ip = baseUrlInterceptor.currentHost.value, // may have changed in slow path
                 capabilities = info.capabilities,
                 firmwareVersion = info.resolvedFirmwareVersion,
+                apiVersion = info.apiVersion,
+                firmwareName = info.firmware,
                 firmwareVariant = deviceApiHolder.firmwareVariant,
                 lastSeen = System.currentTimeMillis(),
             )
