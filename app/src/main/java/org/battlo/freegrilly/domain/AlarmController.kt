@@ -9,7 +9,7 @@ import androidx.core.app.NotificationCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import org.battlo.freegrilly.MainActivity
 import org.battlo.freegrilly.R
-import org.battlo.freegrilly.data.api.models.ProbeStatus
+import org.battlo.freegrilly.data.device.model.Probe
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,7 +40,7 @@ class AlarmController @Inject constructor(
         notificationManager.createNotificationChannel(channel)
     }
 
-    fun onAlarmActive(alarmingProbes: List<ProbeStatus>) {
+    fun onAlarmActive(alarmingProbes: List<Probe>) {
         if (alarmActive) return
         alarmActive = true
         val probe = alarmingProbes.firstOrNull() ?: return

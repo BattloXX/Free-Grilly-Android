@@ -1,7 +1,7 @@
 package org.battlo.freegrilly.data.update
 
 import org.battlo.freegrilly.data.GrillyRepository
-import org.battlo.freegrilly.data.FirmwareVariant
+import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,6 +19,7 @@ import javax.inject.Singleton
 class DeviceFirmwareChecker @Inject constructor(
     private val api: GitHubApiService,
     private val repository: GrillyRepository,
+    private val deviceApiHolder: GrillyDeviceApiHolder,
 ) {
 
     /**
@@ -26,9 +27,9 @@ class DeviceFirmwareChecker @Inject constructor(
      * @return [DeviceFirmwareInfo] if an update is available, null otherwise.
      */
     suspend fun checkForFirmwareUpdate(): DeviceFirmwareInfo? {
-        val isPlus = repository.firmwareVariant == FirmwareVariant.GRILLY_PLUS
+        val source = deviceApiHolder.api.firmwareUpdateSource
         val release = runCatching {
-            api.getLatestRelease(if (isPlus) GRILLY_PLUS_OWNER else GITHUB_OWNER, if (isPlus) GRILLY_PLUS_REPO else GITHUB_REPO)
+            api.getLatestRelease(source.owner, source.repository)
         }.getOrNull() ?: return null
 
         if (release.draft || release.prerelease) return null
@@ -37,12 +38,12 @@ class DeviceFirmwareChecker @Inject constructor(
 
         // Get the current firmware version from the connected device
         val deviceInfo = repository.getDeviceInfo() ?: return null
-        val localVersion = deviceInfo.resolvedFirmwareVersion.trimStart('v')
+        val localVersion = deviceInfo.firmwareVersion.trimStart('v')
 
         if (!isNewer(remote = remoteVersion, local = localVersion)) return null
 
         // Find the .bin asset (ElegantOTA firmware binary)
-        val binAsset = selectFirmwareAsset(release.assets, isPlus) ?: return null
+        val binAsset = selectFirmwareAsset(release.assets, source.otaOnlyAsset) ?: return null
 
         return DeviceFirmwareInfo(
             version = remoteVersion,

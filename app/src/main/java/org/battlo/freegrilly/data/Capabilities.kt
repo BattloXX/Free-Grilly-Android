@@ -34,6 +34,8 @@ object Capabilities {
     fun normalize(flags: List<String>): Set<String> = flags.map {
         when (it) {
             "ota_upload" -> OTA
+            "sse" -> EVENTS
+            "calibration_offset", "probe_calibration" -> CALIBRATION_OFFSET
             else -> it
         }
     }.toSet()

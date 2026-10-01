@@ -109,9 +109,9 @@ fun DashboardScreen(
                     }
                     if (status != null) {
                         BatteryBadge(
-                            batteryPercent = status.batteryPercentage,
-                            isCharging = status.batteryCharging,
-                            wifiDbm = status.wifiSignal,
+                            batteryPercent = status.batteryPercentage ?: 0,
+                            isCharging = status.batteryCharging ?: false,
+                            wifiDbm = status.wifiSignalDbm ?: -100,
                             modifier = Modifier.padding(start = 4.dp, end = 8.dp),
                         )
                     }

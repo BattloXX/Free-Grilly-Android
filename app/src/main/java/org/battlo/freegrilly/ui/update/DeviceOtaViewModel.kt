@@ -17,13 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.GrillyRepository
-import org.battlo.freegrilly.data.FirmwareVariant
-import org.battlo.freegrilly.data.api.GrillyApiService
+import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
 import org.battlo.freegrilly.data.hasFlag
 import org.battlo.freegrilly.data.update.DeviceFirmwareChecker
 import org.battlo.freegrilly.data.update.DeviceFirmwareInfo
@@ -43,7 +39,7 @@ import javax.inject.Inject
 class DeviceOtaViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firmwareChecker: DeviceFirmwareChecker,
-    private val api: GrillyApiService,
+    private val deviceApiHolder: GrillyDeviceApiHolder,
     private val repository: GrillyRepository,
 ) : ViewModel() {
 
@@ -145,14 +141,7 @@ class DeviceOtaViewModel @Inject constructor(
         _state.value = OtaState.Uploading(0, info)
         viewModelScope.launch {
             runCatching {
-                val requestBody = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
-                val part = MultipartBody.Part.createFormData("firmware", file.name, requestBody)
-                if (repository.firmwareVariant == FirmwareVariant.GRILLY_PLUS) {
-                    val auth = adminPassword.takeIf { it.isNotEmpty() }?.let {
-                        "Basic " + android.util.Base64.encodeToString("admin:$it".toByteArray(), android.util.Base64.NO_WRAP)
-                    }
-                    api.uploadGrillyPlusFirmware(authorization = auth, firmware = part)
-                } else api.uploadFirmware(part)
+                deviceApiHolder.api.uploadFirmware(file, adminPassword)
             }.onSuccess {
                 Log.d(TAG, "OTA upload success")
                 _state.value = OtaState.Done(info)

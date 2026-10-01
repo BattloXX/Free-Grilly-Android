@@ -8,7 +8,7 @@ import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
-import org.battlo.freegrilly.data.api.models.DeviceInfo
+import org.battlo.freegrilly.data.device.model.DeviceIdentity
 import javax.inject.Inject
 
 /** Snapshot of everything the Grilly status page shows. */
@@ -40,7 +40,7 @@ class DeviceStatusViewModel @Inject constructor(
 ) : ViewModel() {
 
     // /api/info is not part of the 1-s poll, so fetch it once (and on manual refresh).
-    private val deviceInfo = MutableStateFlow<DeviceInfo?>(null)
+    private val deviceInfo = MutableStateFlow<DeviceIdentity?>(null)
 
     init {
         refresh()
@@ -57,18 +57,18 @@ class DeviceStatusViewModel @Inject constructor(
         DeviceStatusUi(
             connected = status != null || demo,
             demo = demo,
-            name = info?.name?.ifBlank { null } ?: status?.name.orEmpty(),
-            firmware = info?.resolvedFirmwareVersion?.ifBlank { null } ?: status?.resolvedFirmware.orEmpty(),
-            uuid = info?.resolvedUuid?.ifBlank { null } ?: status?.resolvedUuid.orEmpty(),
-            mdnsHostname = info?.resolvedHostname?.ifBlank { null } ?: status?.resolvedHostname.orEmpty(),
+            name = info?.name?.ifBlank { null } ?: status?.identity?.name.orEmpty(),
+            firmware = info?.firmwareVersion?.ifBlank { null } ?: status?.identity?.firmwareVersion.orEmpty(),
+            uuid = info?.uuid?.ifBlank { null } ?: status?.identity?.uuid.orEmpty(),
+            mdnsHostname = info?.hostname?.ifBlank { null } ?: status?.identity?.hostname.orEmpty(),
             ipAddress = ip.orEmpty(),
             batteryPercent = status?.batteryPercentage ?: 0,
             batteryCharging = status?.batteryCharging ?: false,
-            batteryMillivolts = status?.batteryMillivolts ?: 0,
-            lastOffReason = status?.lastOffReason.orEmpty(),
-            lastResetReason = status?.lastResetReason.orEmpty(),
+            batteryMillivolts = status?.diagnostics?.batteryMillivolts ?: 0,
+            lastOffReason = status?.diagnostics?.lastOffReason.orEmpty(),
+            lastResetReason = status?.diagnostics?.lastResetReason.orEmpty(),
             wifiConnected = status?.wifiConnected ?: false,
-            wifiSignalDbm = status?.wifiSignal ?: 0,
+            wifiSignalDbm = status?.wifiSignalDbm ?: 0,
             temperatureUnit = status?.temperatureUnit ?: "celcius",
             probesTotal = status?.probes?.size ?: 0,
             probesConnected = status?.probes?.count { it.connected } ?: 0,

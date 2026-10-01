@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import org.battlo.freegrilly.data.api.BaseUrlInterceptor
 import org.battlo.freegrilly.data.api.GrillyApiService
+import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
 import org.battlo.freegrilly.util.Permissions
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -34,6 +35,7 @@ class DeviceConnector @Inject constructor(
     private val deviceStore: DeviceStore,
     private val baseUrlInterceptor: BaseUrlInterceptor,
     private val repository: GrillyRepository,
+    private val deviceApiHolder: GrillyDeviceApiHolder,
 ) {
     private val TAG = "DeviceConnector"
 
@@ -113,6 +115,7 @@ class DeviceConnector @Inject constructor(
         }
         // /api/info may not exist (epiecs firmware has no /api/info) — fall back to /api/grill fields
         val info = runCatching { api.getInfo() }.getOrNull()
+        deviceApiHolder.selectForFirmware(info?.firmware)
         val device = KnownDevice(
             uuid = info?.resolvedUuid?.ifBlank { status.resolvedUuid } ?: status.resolvedUuid.ifBlank { ip },
             name = info?.name?.ifBlank { status.name } ?: status.name.ifBlank { "Grilleye" },
@@ -121,10 +124,9 @@ class DeviceConnector @Inject constructor(
             lastSeen = System.currentTimeMillis(),
             capabilities = info?.capabilities ?: emptyList(),
             firmwareVersion = info?.resolvedFirmwareVersion?.ifBlank { status.resolvedFirmware } ?: status.resolvedFirmware,
-            firmwareVariant = if (info?.isGrillyPlus == true) FirmwareVariant.GRILLY_PLUS else FirmwareVariant.FREE_GRILLY,
+            firmwareVariant = deviceApiHolder.firmwareVariant,
         )
         repository.setCapabilities(device.capabilities)
-        repository.setFirmwareVariant(device.firmwareVariant)
         deviceStore.saveKnownDevice(device)
         deviceStore.setSelectedDevice(device)
         Log.d(TAG, "connectByIp: connected to ${device.name} caps=${device.capabilities}")
@@ -144,13 +146,14 @@ class DeviceConnector @Inject constructor(
 
     private suspend fun enrichAndSave(device: KnownDevice) {
         val info = runCatching { api.getInfo() }.getOrNull()
+        deviceApiHolder.selectForFirmware(info?.firmware)
         val updated = if (info != null) {
             device.copy(
                 name = info.name.ifBlank { device.name },
                 ip = baseUrlInterceptor.currentHost.value, // may have changed in slow path
                 capabilities = info.capabilities,
                 firmwareVersion = info.resolvedFirmwareVersion,
-                firmwareVariant = if (info.isGrillyPlus) FirmwareVariant.GRILLY_PLUS else FirmwareVariant.FREE_GRILLY,
+                firmwareVariant = deviceApiHolder.firmwareVariant,
                 lastSeen = System.currentTimeMillis(),
             )
         } else {
@@ -160,7 +163,6 @@ class DeviceConnector @Inject constructor(
             )
         }
         repository.setCapabilities(updated.capabilities)
-        repository.setFirmwareVariant(updated.firmwareVariant)
         deviceStore.saveKnownDevice(updated)
         deviceStore.setSelectedDevice(updated)
         Log.d(TAG, "enrichAndSave: ${updated.name} caps=${updated.capabilities}")

@@ -9,7 +9,8 @@ import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.*
 import org.battlo.freegrilly.data.api.BaseUrlInterceptor
 import org.battlo.freegrilly.data.api.GrillyApiService
-import org.battlo.freegrilly.data.api.models.DeviceSettings
+import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
+import org.battlo.freegrilly.data.device.model.DeviceSettings as NeutralDeviceSettings
 import org.battlo.freegrilly.data.api.models.WifiNetwork
 import javax.inject.Inject
 
@@ -28,6 +29,7 @@ class OnboardingViewModel @Inject constructor(
     private val deviceStore: DeviceStore,
     private val nsdDiscovery: NsdDiscovery,
     private val baseUrlInterceptor: BaseUrlInterceptor,
+    private val deviceApiHolder: GrillyDeviceApiHolder,
 ) : ViewModel() {
 
     private val _step = MutableStateFlow<OnboardingStep>(OnboardingStep.ApConnect)
@@ -71,11 +73,10 @@ class OnboardingViewModel @Inject constructor(
             runCatching {
                 // Both supported firmwares expose /api/info while in AP mode. Select the
                 // spelling before posting so strict Free-Grilly installations never see `name`.
-                val isGrillyPlus = api.getInfo().isGrillyPlus
-                api.updateSettings(
-                    DeviceSettings(
-                        grillName = grillName.takeUnless { isGrillyPlus },
-                        name = grillName.takeIf { isGrillyPlus },
+                deviceApiHolder.selectForFirmware(api.getInfo().firmware)
+                deviceApiHolder.api.updateSettings(
+                    NeutralDeviceSettings(
+                        grillName = grillName,
                         wifiSsid = ssid,
                         wifiPassword = password,
                         temperatureUnit = unit,
@@ -109,7 +110,7 @@ class OnboardingViewModel @Inject constructor(
                             lastSeen = System.currentTimeMillis(),
                             capabilities = info?.capabilities ?: emptyList(),
                             firmwareVersion = info?.resolvedFirmwareVersion ?: "",
-                            firmwareVariant = if (info?.isGrillyPlus == true) FirmwareVariant.GRILLY_PLUS else FirmwareVariant.FREE_GRILLY,
+                            firmwareVariant = deviceApiHolder.firmwareVariant,
                         )
                         deviceStore.saveKnownDevice(device)
                         deviceStore.setSelectedDevice(device)

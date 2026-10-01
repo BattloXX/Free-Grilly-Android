@@ -82,9 +82,9 @@ fun ProbeDetailScreen(
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (p.etaSeconds >= 0) {
+                        if ((p.etaSeconds ?: -1) >= 0) {
                             Text(
-                                EtaFormatter.format(p.etaSeconds),
+                                EtaFormatter.format(requireNotNull(p.etaSeconds)),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = colors.successGreen,
                                 fontWeight = FontWeight.Medium,

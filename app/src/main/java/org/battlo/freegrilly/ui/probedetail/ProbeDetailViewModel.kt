@@ -11,7 +11,8 @@ import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
 import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.hasFlag
-import org.battlo.freegrilly.data.api.models.ProbeStatus
+import org.battlo.freegrilly.data.device.model.Probe
+import org.battlo.freegrilly.data.device.model.ProbePatch
 import org.battlo.freegrilly.data.history.Downsample
 import org.battlo.freegrilly.data.history.TempSample
 import javax.inject.Inject
@@ -33,7 +34,7 @@ class ProbeDetailViewModel @Inject constructor(
 
     private val probeId: Int = savedStateHandle["probeId"] ?: 1
 
-    val probe: StateFlow<ProbeStatus?> = repository.statusFlow
+    val probe: StateFlow<Probe?> = repository.statusFlow
         .map { state -> (state as? GrillyUiState.Connected)?.status?.probes?.find { it.resolvedId == probeId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -70,9 +71,7 @@ class ProbeDetailViewModel @Inject constructor(
      */
     fun setTarget(targetC: Float, minC: Float = 0f) {
         viewModelScope.launch {
-            repository.patchProbe(probeId) {
-                it.copy(targetTemperature = targetC, minimumTemperature = minC)
-            }
+            repository.patchProbe(ProbePatch(probeId, targetTemperatureC = targetC, minimumTemperatureC = minC))
         }
     }
 
@@ -80,7 +79,7 @@ class ProbeDetailViewModel @Inject constructor(
     fun setName(name: String) {
         val trimmed = name.trim()
         viewModelScope.launch {
-            repository.patchProbe(probeId) { it.copy(name = trimmed) }
+            repository.patchProbe(ProbePatch(probeId, name = trimmed))
         }
     }
 }

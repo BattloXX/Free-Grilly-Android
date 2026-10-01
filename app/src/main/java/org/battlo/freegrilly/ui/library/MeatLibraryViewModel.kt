@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.GrillyRepository
+import org.battlo.freegrilly.data.device.model.ProbePatch
 import org.battlo.freegrilly.data.food.FoodItem
 import org.battlo.freegrilly.data.food.FoodRepository
 import javax.inject.Inject
@@ -52,13 +53,7 @@ class MeatLibraryViewModel @Inject constructor(
      */
     fun assignToProbe(probeId: Int, food: FoodItem, targetC: Int, minC: Int? = null) {
         viewModelScope.launch {
-            grillyRepository.patchProbe(probeId) {
-                it.copy(
-                    name = food.nameDe,
-                    targetTemperature = targetC.toFloat(),
-                    minimumTemperature = (minC ?: 0).toFloat(),
-                )
-            }
+            grillyRepository.patchProbe(ProbePatch(probeId, food.nameDe, targetC.toFloat(), (minC ?: 0).toFloat()))
         }
     }
 }

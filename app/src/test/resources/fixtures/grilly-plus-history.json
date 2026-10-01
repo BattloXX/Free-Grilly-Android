@@ -1,0 +1,1 @@
+{"probes":[{"probe_id":2,"coarse":{"interval":60,"age":120,"values":[800,null,820]},"fine":{"interval":10,"age":20,"values":[850,860]}}]}
