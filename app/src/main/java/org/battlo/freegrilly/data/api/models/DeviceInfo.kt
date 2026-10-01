@@ -1,6 +1,7 @@
 package org.battlo.freegrilly.data.api.models
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
 
 @Serializable
 data class DeviceInfo(
@@ -10,7 +11,8 @@ data class DeviceInfo(
     /** Firmware family, e.g. "grilly-plus". */
     val firmware: String = "",
     @SerialName("firmware_version") val firmwareVersion: String = "",
-    @SerialName("api_version") val apiVersion: String = "",
+    /** Free-Grilly uses a string; Grilly+ sends the OpenAPI integer form. */
+    @SerialName("api_version") val apiVersion: JsonPrimitive = JsonPrimitive(""),
     @SerialName("mdns_hostname") val mdnsHostname: String = "",
     @SerialName("hostname") val hostname: String = "",
     val capabilities: List<String> = emptyList()

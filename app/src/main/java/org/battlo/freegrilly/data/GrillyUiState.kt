@@ -1,12 +1,12 @@
 package org.battlo.freegrilly.data
 
 import kotlinx.serialization.Serializable
-import org.battlo.freegrilly.data.api.models.GrillStatusResponse
+import org.battlo.freegrilly.data.device.model.GrillState
 
 sealed interface GrillyUiState {
     object Loading : GrillyUiState
     data class Connected(
-        val status: GrillStatusResponse,
+        val status: GrillState,
         val history: Map<Int, List<Float>>,
     ) : GrillyUiState
     object Disconnected : GrillyUiState

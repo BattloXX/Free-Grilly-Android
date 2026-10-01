@@ -3,15 +3,15 @@ package org.battlo.freegrilly.data
 import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import org.battlo.freegrilly.data.api.GrillyApiService
-import org.battlo.freegrilly.data.api.models.GrillStatusResponse
-import org.battlo.freegrilly.data.api.models.ProbeConfig
+import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
+import org.battlo.freegrilly.data.device.model.GrillState
+import org.battlo.freegrilly.data.device.model.Probe
+import org.battlo.freegrilly.data.device.model.ProbePatch
+import org.battlo.freegrilly.data.device.model.DeviceSettings
 import org.battlo.freegrilly.data.history.CookSessionEntity
 import org.battlo.freegrilly.data.history.HistoryDao
 import org.battlo.freegrilly.data.history.TempSample
 import org.battlo.freegrilly.data.history.TempSampleEntity
-import org.battlo.freegrilly.data.history.GrillyPlusHistoryMapper
-import org.battlo.freegrilly.data.stream.GrillEventSource
 import org.battlo.freegrilly.di.ApplicationScope
 import org.battlo.freegrilly.domain.AlarmController
 import javax.inject.Inject
@@ -21,9 +21,8 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class GrillyRepository @Inject constructor(
-    private val api: GrillyApiService,
+    private val deviceApiHolder: GrillyDeviceApiHolder,
     private val alarmController: AlarmController,
-    private val eventSource: GrillEventSource,
     private val historyDao: HistoryDao,
     private val deviceStore: DeviceStore,
     @ApplicationScope private val scope: CoroutineScope,
@@ -58,15 +57,10 @@ class GrillyRepository @Inject constructor(
     var activeCapabilities: Set<String> = emptySet()
         private set
 
-    var firmwareVariant: FirmwareVariant = FirmwareVariant.FREE_GRILLY
-        private set
-
     fun setCapabilities(caps: List<String>) {
         activeCapabilities = Capabilities.normalize(caps)
         _capabilitiesFlow.value = activeCapabilities
     }
-
-    fun setFirmwareVariant(variant: FirmwareVariant) { firmwareVariant = variant }
 
     private val _statusFlow = MutableStateFlow<GrillyUiState>(GrillyUiState.Loading)
     val statusFlow: StateFlow<GrillyUiState> = _statusFlow.asStateFlow()
@@ -76,47 +70,19 @@ class GrillyRepository @Inject constructor(
     fun startPolling() {
         if (pollingJob?.isActive == true) return
         pollingJob = scope.launch {
-            // §8 — SSE path: use server-push instead of 1-second polling when the device
-            // explicitly declares the `events` capability. Falls through to the polling loop
-            // if the stream ends or the flag is absent (original firmware, inert default).
-            if (activeCapabilities.hasFlag(Capabilities.EVENTS)) {
-                Log.d(TAG, "Starting SSE stream (events capability present)")
-                runCatching {
-                    eventSource.stream().collect { status ->
-                        appendAndPersist(status)
-                        _statusFlow.value = GrillyUiState.Connected(
-                            status = status,
-                            history = historyBuffers.mapValues { it.value.toList() },
-                        )
-                        if (status.isAlarmSounding) {
-                            alarmController.onAlarmActive(status.probes.filter { it.alarm })
-                        } else {
-                            alarmController.onAlarmCleared()
-                        }
-                    }
-                }.onFailure {
-                    Log.w(TAG, "SSE stream failed, falling back to polling", it)
-                    if (_statusFlow.value !is GrillyUiState.Disconnected) {
-                        _statusFlow.value = GrillyUiState.Disconnected
-                    }
-                }
-                // SSE stream ended (device closed or all retries exhausted) — fall through
-                // to the polling loop below so the app recovers automatically.
-            }
-
             // Default: 1-second polling (original firmware or SSE stream ended).
             Log.d(TAG, "Starting 1-second polling loop")
             var consecutiveFailures = 0
             while (isActive) {
                 try {
-                    val status = api.getGrillStatus()
+                    val status = deviceApiHolder.api.status()
                     consecutiveFailures = 0
                     appendAndPersist(status)
                     _statusFlow.value = GrillyUiState.Connected(
                         status = status,
                         history = historyBuffers.mapValues { it.value.toList() },
                     )
-                    if (status.isAlarmSounding) {
+                    if (status.alarmActive) {
                         alarmController.onAlarmActive(status.probes.filter { it.alarm })
                     } else {
                         alarmController.onAlarmCleared()
@@ -146,6 +112,7 @@ class GrillyRepository @Inject constructor(
     }
 
     fun setDemoMode() {
+        deviceApiHolder.selectDemo()
         _statusFlow.value = GrillyUiState.Demo
     }
 
@@ -182,72 +149,27 @@ class GrillyRepository @Inject constructor(
         val (sessionId, isNew) = ensureSession()
 
         if (!activeCapabilities.supports(Capabilities.HISTORY)) return
-        if (firmwareVariant == FirmwareVariant.GRILLY_PLUS) {
-            seedGrillyPlusHistory(sessionId, isNew)
-            return
+        val series = runCatching { deviceApiHolder.api.history() }.getOrNull() ?: return
+        series.filter { it.tier == org.battlo.freegrilly.data.device.model.HistoryTier.FINE }.forEach { item ->
+            val buffer = historyBuffers.getOrPut(item.probeId) { ArrayDeque(bufferCapacity) }
+            buffer.clear()
+            item.points.forEach { point -> if (buffer.size >= bufferCapacity) buffer.removeFirst(); buffer.addLast(point.temperatureC) }
         }
-        val response = runCatching { api.getHistory() }.getOrNull() ?: return
-
-        // RAM buffers (fine tier) for the live dashboard sparkline.
-        response.probes.forEach { probe ->
-            val buf = historyBuffers.getOrPut(probe.id) { ArrayDeque(bufferCapacity) }
-            buf.clear()
-            probe.history.forEach { raw ->
-                if (buf.size >= bufferCapacity) buf.removeFirst()
-                buf.addLast(raw / 10f)
-            }
-        }
-
-        // Backfill Room only for a brand-new session (avoid re-seeding a resumed cook).
         if (!isNew || sessionId < 0) return
-        val now = System.currentTimeMillis()
-        val fineMs = response.intervalSeconds.coerceAtLeast(1) * 1000L
-        val coarseMs = response.coarseIntervalSeconds.coerceAtLeast(1) * 1000L
-        val samples = ArrayList<TempSampleEntity>()
-        response.probes.forEach { probe ->
-            val nf = probe.history.size
-            // Newest fine sample ≈ now; walk back at fineMs.
-            val fineStart = now - (nf - 1).coerceAtLeast(0).toLong() * fineMs
-            val nc = probe.historyCoarse.size
-            // Coarse: only points strictly older than the fine window → no overlap, no dups.
-            probe.historyCoarse.forEachIndexed { i, raw ->
-                val ts = now - (nc - 1 - i).toLong() * coarseMs
-                if (ts < fineStart) {
-                    samples.add(TempSampleEntity(sessionId = sessionId, probeId = probe.id, tsMs = ts, tempCx10 = raw))
-                }
-            }
-            probe.history.forEachIndexed { i, raw ->
-                val ts = now - (nf - 1 - i).toLong() * fineMs
-                samples.add(TempSampleEntity(sessionId = sessionId, probeId = probe.id, tsMs = ts, tempCx10 = raw))
-            }
-        }
+        val fineStart = series.filter { it.tier == org.battlo.freegrilly.data.device.model.HistoryTier.FINE }
+            .groupBy { it.probeId }.mapValues { (_, v) -> v.flatMap { it.points }.minOfOrNull { it.timestampMs } ?: Long.MAX_VALUE }
+        val samples = series.flatMap { item -> item.points.filter { item.tier != org.battlo.freegrilly.data.device.model.HistoryTier.COARSE || it.timestampMs < (fineStart[item.probeId] ?: Long.MAX_VALUE) }.map { point ->
+            TempSampleEntity(
+                sessionId = sessionId,
+                probeId = item.probeId,
+                tsMs = point.timestampMs,
+                tempCx10 = (point.temperatureC * 10).roundToInt(),
+            )
+        } }
         if (samples.isNotEmpty()) runCatching { historyDao.insertSamples(samples) }
     }
 
-    private suspend fun seedGrillyPlusHistory(sessionId: Long, isNew: Boolean) {
-        val response = runCatching { api.getGrillyPlusHistory() }.getOrNull() ?: return
-        val now = System.currentTimeMillis()
-        val samples = ArrayList<TempSampleEntity>()
-        response.probes.forEach { probe ->
-            val fine = GrillyPlusHistoryMapper.samples(probe.probeId, probe.fine, now)
-            val coarse = GrillyPlusHistoryMapper.samples(probe.probeId, probe.coarse, now)
-            val buffer = historyBuffers.getOrPut(probe.probeId) { ArrayDeque(bufferCapacity) }
-            buffer.clear()
-            fine.forEach { sample ->
-                if (buffer.size >= bufferCapacity) buffer.removeFirst()
-                buffer.addLast(sample.tempCx10 / 10f)
-            }
-            // Avoid overlap with the fine tier, as in the Free-Grilly mapper.
-            val fineStart = fine.minOfOrNull { it.tsMs } ?: Long.MAX_VALUE
-            samples += coarse.filter { it.tsMs < fineStart }
-            samples += fine
-        }
-        if (isNew && sessionId >= 0 && samples.isNotEmpty()) {
-            historyDao.insertSamples(samples.map { it.copy(sessionId = sessionId) })
-        }
-    }
-
-    private suspend fun appendAndPersist(status: GrillStatusResponse) {
+    private suspend fun appendAndPersist(status: GrillState) {
         val now = System.currentTimeMillis()
 
         // RAM (every update) for the live cards.
@@ -295,36 +217,14 @@ class GrillyRepository @Inject constructor(
         runCatching { historyDao.samplesForProbe(sessionId, probeId) }.getOrDefault(emptyList())
             .map { TempSample(it.tsMs, it.tempCx10 / 10f) }
 
-    suspend fun muteAlarm(): Result<Unit> = runCatching {
+    suspend fun muteAlarm(probeId: Int? = null): Result<Unit> = runCatching {
         if (activeCapabilities.supports(Capabilities.ALARM_MUTE)) {
-            api.muteAlarm()
+            deviceApiHolder.api.muteAlarm(probeId)
         }
         alarmController.onAlarmCleared()
     }
 
-    suspend fun updateProbeConfig(config: ProbeConfig): Result<Unit> = runCatching {
-        if (firmwareVariant == FirmwareVariant.GRILLY_PLUS) {
-            api.patchGrillyPlusProbes(listOf(config.toGrillyPlusPatch()))
-        } else api.updateProbes(listOf(config))
-    }
-
-    /**
-     * Read-modify-write a single probe's config. POST /api/probes is a full replace on the
-     * device — any omitted field is reset (type → "custom", thermistor references → 0). So we
-     * fetch the probe's current full config, apply [mutate] (e.g. change only the target or the
-     * name), and post it back with everything else preserved. This is what keeps "set a target"
-     * from silently switching the probe type to Custom and zeroing its calibration.
-     */
-    suspend fun patchProbe(probeId: Int, mutate: (ProbeConfig) -> ProbeConfig): Result<Unit> =
-        runCatching {
-            val configs = api.getProbes()
-            val current = configs.firstOrNull { it.resolvedId == probeId }
-                ?: error("Probe $probeId not found")
-            val changed = mutate(current)
-            if (firmwareVariant == FirmwareVariant.GRILLY_PLUS) {
-                api.patchGrillyPlusProbes(listOf(changed.toGrillyPlusPatch()))
-            } else api.updateProbes(listOf(changed))
-        }
+    suspend fun patchProbe(patch: ProbePatch): Result<Unit> = runCatching { deviceApiHolder.api.updateProbe(patch) }
 
     suspend fun updateSettings(
         grillName: String? = null,
@@ -334,29 +234,16 @@ class GrillyRepository @Inject constructor(
         /** §8 — Power-saving; only sent when non-null (device must have [Capabilities.POWER_SAVING]). */
         powerSaving: Boolean? = null,
     ): Result<Unit> = runCatching {
-        api.updateSettings(
-            org.battlo.freegrilly.data.api.models.DeviceSettings(
-                grillName = grillName.takeUnless { firmwareVariant == FirmwareVariant.GRILLY_PLUS },
-                name = grillName.takeIf { firmwareVariant == FirmwareVariant.GRILLY_PLUS },
-                temperatureUnit = unit,
-                backlightTimeoutMinutes = backlightTimeout,
-                screenTimeoutMinutes = screenTimeout,
-                powerSaving = powerSaving,
-            )
-        )
+        deviceApiHolder.api.updateSettings(DeviceSettings(grillName, temperatureUnit = unit, backlightTimeoutMinutes = backlightTimeout, screenTimeoutMinutes = screenTimeout, powerSaving = powerSaving))
     }
 
-    suspend fun getDeviceInfo() = runCatching { api.getInfo() }.getOrNull()
+    suspend fun getDeviceInfo() = runCatching { deviceApiHolder.api.info() }.getOrNull()
 
-    suspend fun getDeviceSettings() = runCatching { api.getSettings() }.getOrNull()
+    suspend fun getDeviceSettings() = runCatching { deviceApiHolder.api.settings() }.getOrNull()
 
     suspend fun clearHistory(probeId: Int): Result<Unit> = runCatching {
-        check(firmwareVariant == FirmwareVariant.GRILLY_PLUS && activeCapabilities.hasFlag(Capabilities.CLEAR_HISTORY))
-        api.clearGrillyPlusHistory(mapOf("probe_id" to probeId))
+        check(activeCapabilities.hasFlag(Capabilities.CLEAR_HISTORY))
+        deviceApiHolder.api.clearHistory(probeId)
     }
 
-    private fun ProbeConfig.toGrillyPlusPatch() = org.battlo.freegrilly.data.api.models.GrillyPlusProbePatch(
-        probeId = resolvedId, name = name, targetTemperature = targetTemperature,
-        minimumTemperature = minimumTemperature, probeType = probeType.ifBlank { null }, offsetCelcius = offsetCelcius,
-    )
 }

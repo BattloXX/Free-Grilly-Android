@@ -9,14 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.battlo.freegrilly.data.api.models.ProbeStatus
+import org.battlo.freegrilly.data.device.model.Probe
 import org.battlo.freegrilly.domain.EtaFormatter
 import org.battlo.freegrilly.domain.TempUtils
 import org.battlo.freegrilly.ui.theme.LocalGrillyColors
 
 @Composable
 fun ProbeCard(
-    probe: ProbeStatus,
+    probe: Probe,
     unit: String,
     historyData: List<Float>,
     onClick: () -> Unit,
@@ -77,9 +77,9 @@ fun ProbeCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        if (probe.etaSeconds >= 0) {
+                        if ((probe.etaSeconds ?: -1) >= 0) {
                             Text(
-                                EtaFormatter.format(probe.etaSeconds),
+                                EtaFormatter.format(requireNotNull(probe.etaSeconds)),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.successGreen,
                             )
