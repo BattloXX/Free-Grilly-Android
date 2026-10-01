@@ -9,8 +9,6 @@ import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
-import org.battlo.freegrilly.data.Capabilities
-import org.battlo.freegrilly.data.hasFlag
 import org.battlo.freegrilly.data.device.model.Probe
 import org.battlo.freegrilly.data.device.model.ProbePatch
 import org.battlo.freegrilly.data.history.Downsample
@@ -34,9 +32,18 @@ class ProbeDetailViewModel @Inject constructor(
 
     private val probeId: Int = savedStateHandle["probeId"] ?: 1
 
-    val probe: StateFlow<Probe?> = repository.statusFlow
+    private val liveProbe = repository.statusFlow
         .map { state -> (state as? GrillyUiState.Connected)?.status?.probes?.find { it.resolvedId == probeId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    private val configuredProbe = MutableStateFlow<Probe?>(null)
+    val probe: StateFlow<Probe?> = combine(liveProbe, configuredProbe) { live, configured ->
+        live?.copy(calibrationOffsetC = configured?.calibrationOffsetC ?: live.calibrationOffsetC)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    init {
+        viewModelScope.launch { configuredProbe.value = repository.getProbe(probeId) }
+    }
 
     private val windowState = MutableStateFlow(HistoryWindow.ALL)
     val window: StateFlow<HistoryWindow> = windowState.asStateFlow()
@@ -57,8 +64,12 @@ class ProbeDetailViewModel @Inject constructor(
     val unit: StateFlow<String> = deviceStore.temperatureUnit
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "celcius")
 
-    val supportsClearHistory: StateFlow<Boolean> = repository.capabilitiesFlow
-        .map { it.hasFlag(Capabilities.CLEAR_HISTORY) }
+    val supportsClearHistory: StateFlow<Boolean> = repository.features
+        .map { it.clearHistory }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val supportsCalibration: StateFlow<Boolean> = repository.features
+        .map { it.calibration }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     fun muteAlarm() = viewModelScope.launch { repository.muteAlarm() }
@@ -80,6 +91,16 @@ class ProbeDetailViewModel @Inject constructor(
         val trimmed = name.trim()
         viewModelScope.launch {
             repository.patchProbe(ProbePatch(probeId, name = trimmed))
+        }
+    }
+
+    /** The firmware accepts this value in Celsius even if the app displays Fahrenheit. */
+    fun setCalibrationOffset(offsetC: Float) {
+        viewModelScope.launch {
+            repository.patchProbe(ProbePatch(probeId, calibrationOffsetC = offsetC)).onSuccess {
+                configuredProbe.value = (configuredProbe.value ?: Probe(id = probeId))
+                    .copy(calibrationOffsetC = offsetC)
+            }
         }
     }
 }

@@ -23,6 +23,7 @@ import org.battlo.freegrilly.domain.TempUtils
 import org.battlo.freegrilly.ui.components.CompactHeader
 import org.battlo.freegrilly.ui.components.TimeSeriesChart
 import org.battlo.freegrilly.ui.theme.LocalGrillyColors
+import kotlin.math.roundToInt
 
 @Composable
 fun ProbeDetailScreen(
@@ -36,6 +37,7 @@ fun ProbeDetailScreen(
     val window by viewModel.window.collectAsStateWithLifecycle()
     val unit by viewModel.unit.collectAsStateWithLifecycle()
     val supportsClearHistory by viewModel.supportsClearHistory.collectAsStateWithLifecycle()
+    val supportsCalibration by viewModel.supportsCalibration.collectAsStateWithLifecycle()
     val colors = LocalGrillyColors.current
     var showTargetDialog by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
@@ -131,6 +133,14 @@ fun ProbeDetailScreen(
                         Text(stringResource(R.string.assign_food))
                     }
                 }
+
+                if (supportsCalibration) {
+                    CalibrationCard(
+                        offsetC = p.calibrationOffsetC ?: 0f,
+                        unit = unit,
+                        onSave = viewModel::setCalibrationOffset,
+                    )
+                }
                 if (supportsClearHistory) {
                     TextButton(onClick = { viewModel.clearHistory() }) {
                         Text(stringResource(R.string.clear_history))
@@ -194,6 +204,51 @@ fun ProbeDetailScreen(
                 TextButton(onClick = { showRenameDialog = false }) { Text(stringResource(R.string.cancel)) }
             },
         )
+    }
+}
+
+@Composable
+private fun CalibrationCard(
+    offsetC: Float,
+    unit: String,
+    onSave: (Float) -> Unit,
+) {
+    var draftOffsetC by remember(offsetC) { mutableFloatStateOf(offsetC) }
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(
+                stringResource(R.string.probe_calibration),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                stringResource(R.string.probe_calibration_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                OutlinedButton(onClick = { draftOffsetC -= 0.1f }) {
+                    Icon(Icons.Default.Remove, contentDescription = stringResource(R.string.probe_calibration_decrease))
+                }
+                Text(
+                    TempUtils.formatOffset(draftOffsetC, unit),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                OutlinedButton(onClick = { draftOffsetC += 0.1f }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.probe_calibration_increase))
+                }
+            }
+            Button(
+                onClick = { onSave((draftOffsetC * 10).roundToInt() / 10f) },
+                enabled = kotlin.math.abs(draftOffsetC - offsetC) >= 0.05f,
+                modifier = Modifier.align(Alignment.End),
+            ) { Text(stringResource(R.string.save)) }
+        }
     }
 }
 

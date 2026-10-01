@@ -16,22 +16,56 @@ data class DeviceStatusUi(
     val connected: Boolean = false,
     val demo: Boolean = false,
     val name: String = "",
-    val firmware: String = "",
+    val firmwareName: String = "",
+    val firmwareVersion: String = "",
+    val apiVersion: String = "",
     val uuid: String = "",
     val mdnsHostname: String = "",
     val ipAddress: String = "",
-    val batteryPercent: Int = 0,
-    val batteryCharging: Boolean = false,
-    val batteryMillivolts: Int = 0,
+    val batteryPercent: Int? = null,
+    val batteryCharging: Boolean? = null,
+    val batteryMillivolts: Int? = null,
     val lastOffReason: String = "",
     val lastResetReason: String = "",
-    val wifiConnected: Boolean = false,
-    val wifiSignalDbm: Int = 0,
+    val wifiConnected: Boolean? = null,
+    val wifiSignalDbm: Int? = null,
     val temperatureUnit: String = "celcius",
     val probesTotal: Int = 0,
     val probesConnected: Int = 0,
     val capabilities: List<String> = emptyList(),
 )
+
+/** A displayable status value. The filtering lives here so it is testable without Compose. */
+data class DeviceStatusRow(val kind: Kind, val value: String) {
+    enum class Kind {
+        NAME, FIRMWARE_NAME, FIRMWARE_VERSION, API_VERSION, UUID, MDNS_HOSTNAME, IP_ADDRESS,
+        WIFI_CONNECTED, WIFI_RSSI, BATTERY_PERCENT, BATTERY_VOLTAGE, BATTERY_CHARGING,
+        LAST_RESET_REASON, LAST_OFF_REASON,
+    }
+}
+
+object DeviceStatusRows {
+    fun from(ui: DeviceStatusUi): List<DeviceStatusRow> = buildList {
+        fun addText(kind: DeviceStatusRow.Kind, text: String) {
+            text.trim().takeIf { it.isNotEmpty() }?.let { add(DeviceStatusRow(kind, it)) }
+        }
+        addText(DeviceStatusRow.Kind.NAME, ui.name)
+        addText(DeviceStatusRow.Kind.FIRMWARE_NAME, ui.firmwareName)
+        addText(DeviceStatusRow.Kind.FIRMWARE_VERSION, ui.firmwareVersion)
+        addText(DeviceStatusRow.Kind.API_VERSION, ui.apiVersion)
+        addText(DeviceStatusRow.Kind.UUID, ui.uuid)
+        addText(DeviceStatusRow.Kind.MDNS_HOSTNAME, ui.mdnsHostname)
+        addText(DeviceStatusRow.Kind.IP_ADDRESS, ui.ipAddress)
+        ui.wifiConnected?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.WIFI_CONNECTED, it.toString())) }
+        // The legacy DTO uses -100 as its "Wi-Fi unavailable" sentinel.
+        ui.wifiSignalDbm?.takeIf { it != 0 && it != -100 }?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.WIFI_RSSI, it.toString())) }
+        ui.batteryPercent?.takeIf { it != 0 }?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.BATTERY_PERCENT, it.toString())) }
+        ui.batteryMillivolts?.takeIf { it != 0 }?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.BATTERY_VOLTAGE, it.toString())) }
+        ui.batteryCharging?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.BATTERY_CHARGING, it.toString())) }
+        addText(DeviceStatusRow.Kind.LAST_RESET_REASON, ui.lastResetReason)
+        addText(DeviceStatusRow.Kind.LAST_OFF_REASON, ui.lastOffReason)
+    }
+}
 
 @HiltViewModel
 class DeviceStatusViewModel @Inject constructor(
@@ -58,17 +92,19 @@ class DeviceStatusViewModel @Inject constructor(
             connected = status != null || demo,
             demo = demo,
             name = info?.name?.ifBlank { null } ?: status?.identity?.name.orEmpty(),
-            firmware = info?.firmwareVersion?.ifBlank { null } ?: status?.identity?.firmwareVersion.orEmpty(),
+            firmwareName = info?.firmwareName?.ifBlank { null } ?: status?.identity?.firmwareName.orEmpty(),
+            firmwareVersion = info?.firmwareVersion?.ifBlank { null } ?: status?.identity?.firmwareVersion.orEmpty(),
+            apiVersion = info?.apiVersion?.ifBlank { null } ?: status?.identity?.apiVersion.orEmpty(),
             uuid = info?.uuid?.ifBlank { null } ?: status?.identity?.uuid.orEmpty(),
             mdnsHostname = info?.hostname?.ifBlank { null } ?: status?.identity?.hostname.orEmpty(),
             ipAddress = ip.orEmpty(),
-            batteryPercent = status?.batteryPercentage ?: 0,
-            batteryCharging = status?.batteryCharging ?: false,
-            batteryMillivolts = status?.diagnostics?.batteryMillivolts ?: 0,
+            batteryPercent = status?.batteryPercentage,
+            batteryCharging = status?.batteryCharging,
+            batteryMillivolts = status?.diagnostics?.batteryMillivolts,
             lastOffReason = status?.diagnostics?.lastOffReason.orEmpty(),
             lastResetReason = status?.diagnostics?.lastResetReason.orEmpty(),
-            wifiConnected = status?.wifiConnected ?: false,
-            wifiSignalDbm = status?.wifiSignalDbm ?: 0,
+            wifiConnected = status?.wifiConnected,
+            wifiSignalDbm = status?.wifiSignalDbm,
             temperatureUnit = status?.temperatureUnit ?: "celcius",
             probesTotal = status?.probes?.size ?: 0,
             probesConnected = status?.probes?.count { it.connected } ?: 0,
