@@ -6,9 +6,19 @@ import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.battlo.freegrilly.data.api.models.DeviceInfo
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -33,6 +43,14 @@ data class DiscoveredDevice(
     val serviceType: String,  // "free_grilly" or "original"
 )
 
+/** Pure UUID-first upsert used for services advertised under multiple mDNS types. */
+object DiscoveryDedupe {
+    fun upsert(existing: List<DiscoveredDevice>, incoming: DiscoveredDevice): List<DiscoveredDevice> =
+        existing.filterNot {
+            if (incoming.uuid.isNotBlank()) it.uuid == incoming.uuid else it.ip == incoming.ip
+        }.plus(incoming)
+}
+
 @Singleton
 class NsdDiscovery @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -53,7 +71,17 @@ class NsdDiscovery @Inject constructor(
     private var nsdManager: NsdManager? = null
     private var freeGrillyListener: NsdManager.DiscoveryListener? = null
     private var grillyPlusListener: NsdManager.DiscoveryListener? = null
+    private var grillyListener: NsdManager.DiscoveryListener? = null
     private var legacyHttpListener: NsdManager.DiscoveryListener? = null
+    private val discoveryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val resolveJobs = mutableListOf<Job>()
+    private val infoClient = OkHttpClient.Builder()
+        .connectTimeout(2, TimeUnit.SECONDS)
+        .readTimeout(2, TimeUnit.SECONDS)
+        .writeTimeout(2, TimeUnit.SECONDS)
+        .build()
+    private val infoJson = Json { ignoreUnknownKeys = true; isLenient = true; explicitNulls = false }
+    @Volatile private var scanGeneration = 0
     /** Held during active NSD scans to ensure mDNS multicast packets reach the app. */
     private var multicastLock: WifiManager.MulticastLock? = null
 
@@ -63,6 +91,7 @@ class NsdDiscovery @Inject constructor(
      */
     fun startDiscovery(includeOriginal: Boolean = true, targetUuid: String? = null) {
         _state.value = DiscoveryState.Searching
+        val generation = ++scanGeneration
 
         // Acquire multicast lock so mDNS packets are not filtered by the Wi-Fi driver.
         // Requires CHANGE_WIFI_MULTICAST_STATE permission in the manifest.
@@ -74,17 +103,21 @@ class NsdDiscovery @Inject constructor(
 
         val mgr = (context.getSystemService(Context.NSD_SERVICE) as NsdManager).also { nsdManager = it }
 
-        freeGrillyListener = makeListener(mgr, legacy = false, targetUuid = targetUuid)
+        freeGrillyListener = makeListener(mgr, legacy = false, targetUuid = targetUuid, generation = generation)
         runCatching {
             mgr.discoverServices("_free-grilly._tcp", NsdManager.PROTOCOL_DNS_SD, freeGrillyListener)
         }.onFailure { Log.w(TAG, "free-grilly discovery failed: $it") }
-        grillyPlusListener = makeListener(mgr, legacy = false, grillyPlus = true, targetUuid = targetUuid)
+        grillyPlusListener = makeListener(mgr, legacy = false, grillyPlus = true, targetUuid = targetUuid, generation = generation)
         runCatching {
             mgr.discoverServices("_grilly-plus._tcp", NsdManager.PROTOCOL_DNS_SD, grillyPlusListener)
         }.onFailure { Log.w(TAG, "grilly-plus discovery failed: $it") }
+        grillyListener = makeListener(mgr, legacy = false, targetUuid = targetUuid, generation = generation)
+        runCatching {
+            mgr.discoverServices("_grilly._tcp", NsdManager.PROTOCOL_DNS_SD, grillyListener)
+        }.onFailure { Log.w(TAG, "grilly discovery failed: $it") }
 
         if (includeOriginal) {
-            legacyHttpListener = makeListener(mgr, legacy = true, targetUuid = targetUuid)
+            legacyHttpListener = makeListener(mgr, legacy = true, targetUuid = targetUuid, generation = generation)
             runCatching {
                 mgr.discoverServices("_http._tcp", NsdManager.PROTOCOL_DNS_SD, legacyHttpListener)
             }.onFailure { Log.w(TAG, "http discovery failed: $it") }
@@ -92,12 +125,19 @@ class NsdDiscovery @Inject constructor(
     }
 
     fun stopDiscovery() {
+        ++scanGeneration // Ignore a request that finishes after its scan is stopped.
         runCatching { freeGrillyListener?.let { nsdManager?.stopServiceDiscovery(it) } }
         runCatching { grillyPlusListener?.let { nsdManager?.stopServiceDiscovery(it) } }
+        runCatching { grillyListener?.let { nsdManager?.stopServiceDiscovery(it) } }
         runCatching { legacyHttpListener?.let { nsdManager?.stopServiceDiscovery(it) } }
         freeGrillyListener = null
         grillyPlusListener = null
+        grillyListener = null
         legacyHttpListener = null
+        synchronized(resolveJobs) {
+            resolveJobs.forEach { it.cancel() }
+            resolveJobs.clear()
+        }
         _state.value = DiscoveryState.Idle
         _discoveredDevices.value = emptyList()
         // Release multicast lock when scanning stops.
@@ -110,6 +150,7 @@ class NsdDiscovery @Inject constructor(
         legacy: Boolean,
         grillyPlus: Boolean = false,
         targetUuid: String?,
+        generation: Int,
     ) = object : NsdManager.DiscoveryListener {
 
         override fun onDiscoveryStarted(serviceType: String) {
@@ -124,13 +165,14 @@ class NsdDiscovery @Inject constructor(
                         n.contains("freegrilly", ignoreCase = true)
                 if (!isGrilleye) return
             }
-            mgr.resolveService(service, makeResolveListener(legacy, grillyPlus, targetUuid))
+            mgr.resolveService(service, makeResolveListener(legacy, grillyPlus, targetUuid, generation))
         }
 
         override fun onServiceLost(service: NsdServiceInfo) {
-            // Remove the device from the accumulated list (by service name as a proxy for uuid)
+            // Do not remove a newer confirmation of the same UUID from another service type.
+            val variant = if (legacy) "original" else if (grillyPlus) "grilly_plus" else "free_grilly"
             _discoveredDevices.value = _discoveredDevices.value
-                .filterNot { it.name == service.serviceName }
+                .filterNot { it.name == service.serviceName && it.serviceType == variant }
         }
         override fun onDiscoveryStopped(serviceType: String) {}
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
@@ -143,6 +185,7 @@ class NsdDiscovery @Inject constructor(
         legacy: Boolean,
         grillyPlus: Boolean,
         targetUuid: String?,
+        generation: Int,
     ) = object : NsdManager.ResolveListener {
         override fun onResolveFailed(si: NsdServiceInfo, code: Int) {
             Log.w(TAG, "Resolve failed code=$code")
@@ -157,22 +200,45 @@ class NsdDiscovery @Inject constructor(
                 if (addr.contains(':')) return  // IPv6 — skip, wait for IPv4 result
                 addr
             }
-            val name = si.attributes?.get("name")?.let { String(it) } ?: si.serviceName
+            if (!isPrivateOrLocalIp(ip)) return
+            val advertisedName = si.attributes?.get("name")?.let { String(it) } ?: si.serviceName
                 ?: if (legacy) "Grilleye" else if (grillyPlus) "Grilly+" else "Free-Grilly"
-            val uuid = si.attributes?.get("uuid")?.let { String(it) } ?: ""
-            if (targetUuid != null && uuid.isNotEmpty() && uuid != targetUuid) return
-            val variant = if (legacy) "original" else if (grillyPlus) "grilly_plus" else "free_grilly"
-            _state.value = DiscoveryState.Found(
-                ip = ip,
-                name = name,
-                uuid = uuid,
-                firmwareVariant = variant,
-            )
-            // §8 — accumulate into the multi-device list (upsert by uuid/ip)
-            val discovered = DiscoveredDevice(ip = ip, name = name, uuid = uuid, serviceType = variant)
-            _discoveredDevices.value = _discoveredDevices.value
-                .filterNot { it.uuid == uuid || it.ip == ip }
-                .plus(discovered)
+            val advertisedUuid = si.attributes?.get("uuid")?.let { String(it) } ?: ""
+            // TXT is only a cheap prefilter. The /api/info UUID is authoritative when present.
+            if (targetUuid != null && advertisedUuid.isNotEmpty() && advertisedUuid != targetUuid) return
+            val job = discoveryScope.launch {
+                val info = fetchInfo(ip)
+                if (generation != scanGeneration) return@launch
+                val uuid = info?.resolvedUuid?.ifBlank { advertisedUuid } ?: advertisedUuid
+                if (targetUuid != null && uuid.isNotEmpty() && uuid != targetUuid) return@launch
+                val name = info?.name?.ifBlank { advertisedName } ?: advertisedName
+                val variant = when {
+                    legacy -> "original"
+                    info?.isGrillyPlus == true || grillyPlus -> "grilly_plus"
+                    else -> "free_grilly"
+                }
+                _state.value = DiscoveryState.Found(ip, name, uuid, variant)
+                val discovered = DiscoveredDevice(ip, name, uuid, variant)
+                _discoveredDevices.value = DiscoveryDedupe.upsert(_discoveredDevices.value, discovered)
+            }
+            synchronized(resolveJobs) { resolveJobs += job }
         }
+    }
+
+    /** This intentionally bypasses [BaseUrlInterceptor] so scanning cannot change the active device. */
+    private fun fetchInfo(ip: String): DeviceInfo? = runCatching {
+        infoClient.newCall(Request.Builder().url("http://$ip/api/info").build()).execute().use { response ->
+            if (!response.isSuccessful) return null
+            val body = response.body?.string() ?: return null
+            infoJson.decodeFromString<DeviceInfo>(body)
+        }
+    }.onFailure { Log.d(TAG, "Discovery info request failed for $ip: $it") }.getOrNull()
+
+    private fun isPrivateOrLocalIp(ip: String): Boolean {
+        val octets = ip.split('.').mapNotNull { it.toIntOrNull() }
+        if (octets.size != 4 || octets.any { it !in 0..255 }) return false
+        val (a, b, _, _) = octets
+        return a == 10 || a == 172 && b in 16..31 || a == 192 && b == 168 ||
+            a == 169 && b == 254 || a == 127
     }
 }

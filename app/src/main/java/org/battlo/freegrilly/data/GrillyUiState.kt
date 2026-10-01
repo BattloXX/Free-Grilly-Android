@@ -25,6 +25,10 @@ data class KnownDevice(
     /** Populated from /api/info capabilities array. Empty = unknown/original firmware. */
     val capabilities: List<String> = emptyList(),
     val firmwareVersion: String = "",
+    /** API contract version reported by /api/info. */
+    val apiVersion: String = "",
+    /** Firmware family/name reported by /api/info; IP remains only a last-known address. */
+    val firmwareName: String = "",
     val firmwareVariant: FirmwareVariant = FirmwareVariant.FREE_GRILLY,
 ) {
     val isOriginalFirmware: Boolean get() = capabilities.isEmpty() && firmwareVersion.isNotEmpty()
