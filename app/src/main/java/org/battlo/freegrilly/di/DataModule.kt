@@ -28,7 +28,7 @@ object DataModule {
     @Singleton
     fun provideHistoryDatabase(@ApplicationContext context: Context): HistoryDatabase =
         Room.databaseBuilder(context, HistoryDatabase::class.java, "history_db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(HistoryDatabase.MIGRATION_1_2)
             .build()
 
     @Provides

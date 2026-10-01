@@ -46,6 +46,7 @@ private fun GrillStatusResponse.state(identity: DeviceIdentity) = GrillState(
     wifiConnected = wifiConnected,
     wifiSignalDbm = wifiSignal,
     alarmActive = isAlarmSounding,
+    cookSessionId = resolvedCookSessionId,
     probes = probes.map { it.probe() },
     diagnostics = Diagnostics(batteryMillivolts.takeIf { it != 0 }, lastOffReason.ifBlank { null }, lastResetReason.ifBlank { null }),
 )
@@ -124,6 +125,7 @@ open class FreeGrillyApiAdapter @Inject constructor(service: GrillyApiService) :
 @Singleton
 class GrillyPlusApiAdapter @Inject constructor(service: GrillyApiService) : RetrofitGrillyDeviceApi(service) {
     override val firmwareUpdateSource = FirmwareUpdateSource("bardesss", "grilly-plus", true)
+    override val supportsHistoryGapFill = true
     override suspend fun updateProbe(patch: ProbePatch) {
         service.patchGrillyPlusProbes(listOf(GrillyPlusProbePatch(
             probeId = patch.id, name = patch.name, targetTemperature = patch.targetTemperatureC,
@@ -140,7 +142,13 @@ class GrillyPlusApiAdapter @Inject constructor(service: GrillyApiService) : Retr
     }
     override suspend fun history(): List<HistorySeries> {
         val now = System.currentTimeMillis()
-        return service.getGrillyPlusHistory().probes.flatMap { p -> listOfNotNull(
+        // Plain /api/history is coarse only in current Grilly+ firmware. Ask each connected
+        // probe for its fine tier, retaining the plain response as a safe fallback.
+        val coarse = service.getGrillyPlusHistory()
+        val fine = service.getGrillStatus().probes.filter { it.connected }.flatMap { probe ->
+            runCatching { service.getGrillyPlusHistory(probe.resolvedId).probes }.getOrDefault(emptyList())
+        }
+        return (coarse.probes + fine).flatMap { p -> listOfNotNull(
             p.fine?.let { HistorySeries(p.probeId, HistoryTier.FINE, GrillyPlusHistoryMapper.samples(p.probeId, it, now).map { s -> HistoryPoint(s.tsMs, s.tempCx10 / 10f) }) },
             p.coarse?.let { HistorySeries(p.probeId, HistoryTier.COARSE, GrillyPlusHistoryMapper.samples(p.probeId, it, now).map { s -> HistoryPoint(s.tsMs, s.tempCx10 / 10f) }) },
         ) }
