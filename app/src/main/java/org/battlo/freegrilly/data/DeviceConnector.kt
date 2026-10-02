@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import org.battlo.freegrilly.data.api.BaseUrlInterceptor
 import org.battlo.freegrilly.data.api.GrillyApiService
+import org.battlo.freegrilly.data.api.models.DeviceInfo
 import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
 import org.battlo.freegrilly.util.Permissions
 import javax.inject.Inject
@@ -116,21 +117,22 @@ class DeviceConnector @Inject constructor(
         // /api/info may not exist (epiecs firmware has no /api/info) — fall back to /api/grill fields
         val info = runCatching { api.getInfo() }.getOrNull()
         deviceApiHolder.selectForFirmware(info?.firmware)
-        val device = KnownDevice(
-            uuid = info?.resolvedUuid?.ifBlank { status.resolvedUuid } ?: status.resolvedUuid.ifBlank { ip },
-            name = info?.name?.ifBlank { status.name } ?: status.name.ifBlank { "Grilleye" },
-            ip = ip,
-            mdnsHostname = info?.resolvedHostname ?: status.resolvedHostname,
-            lastSeen = System.currentTimeMillis(),
-            capabilities = info?.capabilities ?: emptyList(),
-            firmwareVersion = info?.resolvedFirmwareVersion?.ifBlank { status.resolvedFirmware } ?: status.resolvedFirmware,
-            apiVersion = info?.apiVersion.orEmpty(),
-            firmwareName = info?.firmware.orEmpty(),
-            firmwareVariant = deviceApiHolder.firmwareVariant,
-        )
-        repository.setCapabilities(device.capabilities)
-        deviceStore.saveKnownDevice(device)
-        deviceStore.setSelectedDevice(device)
+        val device = info?.let {
+            persistDeviceFromInfo(
+                info = it,
+                ip = ip,
+                fallback = KnownDevice(
+                    uuid = status.resolvedUuid.ifBlank { ip },
+                    name = status.name.ifBlank { "Grilleye" },
+                    ip = ip,
+                    mdnsHostname = status.resolvedHostname,
+                    firmwareVersion = status.resolvedFirmware,
+                ),
+            )
+        } ?: KnownDevice(
+            uuid = status.resolvedUuid.ifBlank { ip }, name = status.name.ifBlank { "Grilleye" },
+            ip = ip, mdnsHostname = status.resolvedHostname, firmwareVersion = status.resolvedFirmware,
+        ).also { persistDevice(it) }
         Log.d(TAG, "connectByIp: connected to ${device.name} caps=${device.capabilities}")
         return ConnectResult(success = true)
     }
@@ -148,28 +150,42 @@ class DeviceConnector @Inject constructor(
 
     private suspend fun enrichAndSave(device: KnownDevice) {
         val info = runCatching { api.getInfo() }.getOrNull()
-        deviceApiHolder.selectForFirmware(info?.firmware)
         val updated = if (info != null) {
-            device.copy(
-                name = info.name.ifBlank { device.name },
-                ip = baseUrlInterceptor.currentHost.value, // may have changed in slow path
-                capabilities = info.capabilities,
-                firmwareVersion = info.resolvedFirmwareVersion,
-                apiVersion = info.apiVersion,
-                firmwareName = info.firmware,
-                firmwareVariant = deviceApiHolder.firmwareVariant,
-                lastSeen = System.currentTimeMillis(),
-            )
+            persistDeviceFromInfo(info, baseUrlInterceptor.currentHost.value, device)
         } else {
             device.copy(
                 ip = baseUrlInterceptor.currentHost.value,
                 lastSeen = System.currentTimeMillis(),
-            )
+            ).also { persistDevice(it) }
         }
-        repository.setCapabilities(updated.capabilities)
-        deviceStore.saveKnownDevice(updated)
-        deviceStore.setSelectedDevice(updated)
         Log.d(TAG, "enrichAndSave: ${updated.name} caps=${updated.capabilities}")
+    }
+
+    /**
+     * Turns an authoritative /api/info response into the app's persisted device record.
+     * Discovery and onboarding use this too, so a newly provisioned device is ready for the
+     * dashboard with the same adapter and capabilities as a normal connector path.
+     */
+    suspend fun persistDeviceFromInfo(info: DeviceInfo, ip: String, fallback: KnownDevice): KnownDevice {
+        deviceApiHolder.selectForFirmware(info.firmware)
+        return fallback.copy(
+            uuid = info.resolvedUuid.ifBlank { fallback.uuid.ifBlank { ip } },
+            name = info.name.ifBlank { fallback.name },
+            ip = ip,
+            mdnsHostname = info.resolvedHostname.ifBlank { fallback.mdnsHostname },
+            lastSeen = System.currentTimeMillis(),
+            capabilities = info.capabilities,
+            firmwareVersion = info.resolvedFirmwareVersion.ifBlank { fallback.firmwareVersion },
+            apiVersion = info.apiVersion,
+            firmwareName = info.firmware,
+            firmwareVariant = deviceApiHolder.firmwareVariant,
+        ).also { persistDevice(it) }
+    }
+
+    private suspend fun persistDevice(device: KnownDevice) {
+        repository.setCapabilities(device.capabilities)
+        deviceStore.saveKnownDevice(device)
+        deviceStore.setSelectedDevice(device)
     }
 }
 
