@@ -23,24 +23,26 @@ Native Android-App für das **Free-Grilly** Grillthermometer (BattloXX-Fork der 
 
 ## Features
 
-- **Automatische Geräteerkennung** via mDNS (`_free-grilly._tcp`) — kein manuelles IP-Eintippen nötig
+- **Automatische Geräteerkennung** via mDNS (`_free-grilly._tcp`, `_grilly-plus._tcp`, `_grilly._tcp`), jedes Gerät wird per `GET /api/info` bestätigt und über seine UUID (nicht die IP) identifiziert — kein manuelles IP-Eintippen nötig
+- **Eine App für Free-Grilly und Grilly+** — die Firmware-Unterschiede stecken in einer Adapter-Schicht, die UI arbeitet auf einem gemeinsamen Modell; Funktionen werden über die `capabilities` aus `/api/info` freigeschaltet, nicht über Versionsnummern
 - **Live-Temperaturen** aller bis zu 8 Sonden (1-Sekunden-Polling)
-- **Verlaufs-Graph** (Compose Canvas, bis zu 10 Minuten)
-- **Alarm-Benachrichtigungen** wenn eine Sonde die Zieltemperatur erreicht (auch im Hintergrund)
-- **Einrichtungs-Assistent** (AP-Provisioning + WLAN-Konfiguration)
+- **Verlaufs-Graph** (Compose Canvas) mit lokal gespeicherter Historie; bei Grilly+ werden feine und grobe Verlaufsstufe beim Verbinden geladen und zusammengeführt, sodass auch mehrstündige Cooks nach dem Schließen der App ihren Graphen behalten
+- **Alarm-Benachrichtigungen** pro Sonde nach dem Alarmzustand der Firmware (auch im Hintergrund), mit den Aktionen **Stumm** und **Öffnen**
+- **Einrichtungs-Assistent** (AP-Provisioning + WLAN-Konfiguration), erkennt die Firmware über `/api/info` (AP-Namen `FreeGrilly_…`, `GrillyPlus_…`, `Grilleye…`) und wartet nach dem Setup begrenzt auf das Gerät im Heim-WLAN
 - **Grillgut-Bibliothek** mit kuratierten Kerntemperaturen (Rind, Schwein, Geflügel, Fisch, Lamm, Wild)
 - **Smartphone & Tablet** – adaptives Layout (BottomBar / NavigationRail)
 - **Zweisprachig** DE/EN (System-Locale + In-App-Umschaltung)
 - **Demo-Modus** – ohne Hardware bedienbar
 - Eigene Grillgüter + Favoriten (Room-Datenbank)
-- **In-App OTA** – Firmware-Update direkt aus der App heraus (wenn vom Gerät unterstützt)
-- **Geräte-Status & Diagnose** – Grilly-Status-Ansicht mit Energie (Akku %, Zellspannung) und Diagnose (Grund des letzten Neustarts / der letzten Abschaltung)
+- **In-App OTA** – Firmware-Update direkt aus der App heraus (wenn vom Gerät unterstützt); bei gesetztem Admin-Passwort (Grilly+) fragt die App danach, auf Wunsch wird es per Android Keystore verschlüsselt gemerkt
+- **Sonden-Kalibrierung** (Offset in °C) – nur sichtbar, wenn die Firmware `calibration_offset` meldet
+- **Geräte-Status & Diagnose** – alle von der Firmware gelieferten Angaben (Firmware-Name/-Version, API-Version, Akku %, Zellspannung, Laden, WLAN-Signal, Grund des letzten Neustarts / der letzten Abschaltung, UUID, mDNS-Hostname); unbekannte Felder werden ausgeblendet
 
 ## Voraussetzungen
 
 | | |
 |---|---|
-| **Gerät** | Free-Grilly (Grilleye Max mit [BattloXX-Firmware](https://github.com/BattloXX/free-grilly/releases/latest)) |
+| **Gerät** | Grilleye Max mit [Free-Grilly](https://github.com/BattloXX/free-grilly/releases/latest) oder [Grilly+](https://github.com/bardesss/grilly-plus) Firmware |
 | **Android** | 8.0 Oreo (API 26) oder neuer |
 | **Netzwerk** | Gerät und Smartphone im selben WLAN |
 
@@ -50,7 +52,7 @@ Native Android-App für das **Free-Grilly** Grillthermometer (BattloXX-Fork der 
 - Retrofit 2 + OkHttp + Kotlinx Serialization
 - Hilt (DI) · Room · DataStore
 - Compose Canvas (Verlaufs-Graph)
-- `NsdManager` (mDNS-Geräteerkennung)
+- `NsdManager` (mDNS-Geräteerkennung), Android Keystore (optional gemerktes OTA-Passwort)
 - `NotificationCompat` + Foreground-Service (Hintergrund-Polling)
 
 ## Bauen
@@ -70,7 +72,9 @@ Das Debug-APK liegt unter `app/build/outputs/apk/debug/`.
 
 ## API
 
-Die Firmware stellt eine lokale HTTP-REST-API bereit. Details: [`docs/android_app.md`](https://github.com/BattloXX/free-grilly/blob/master/docs/android_app.md) im Firmware-Repo.
+Die Firmware stellt eine lokale HTTP-REST-API bereit. Details: [`docs/android_app.md`](https://github.com/BattloXX/free-grilly/blob/master/docs/android_app.md) im Firmware-Repo (Free-Grilly) bzw. `docs/openapi.yaml` im [Grilly+-Repo](https://github.com/bardesss/grilly-plus).
+
+Intern greift die App über `GrillyDeviceApi` mit `FreeGrillyApiAdapter` bzw. `GrillyPlusApiAdapter` auf das Gerät zu; der Adapter wird beim Verbinden aus `/api/info` gewählt. Bereits vorbereitet, aber erst aktiv, wenn die Firmware es meldet: Cook-Sessions nach Firmware-ID (`cook_session`), Mute pro Sonde (`alarm_probe_mute`) und der SSE-Stream (`events`).
 
 ---
 
@@ -94,24 +98,26 @@ Native Android app for the **Free-Grilly** grill thermometer (BattloXX fork of t
 
 ## Features
 
-- **Automatic device discovery** via mDNS (`_free-grilly._tcp`) — no manual IP entry required
+- **Automatic device discovery** via mDNS (`_free-grilly._tcp`, `_grilly-plus._tcp`, `_grilly._tcp`); every device is confirmed with `GET /api/info` and identified by its UUID (not its IP) — no manual IP entry required
+- **One app for Free-Grilly and Grilly+** — firmware differences live in an adapter layer, the UI works on a common model; features are enabled by the `capabilities` from `/api/info`, not by version numbers
 - **Live temperatures** for up to 8 probes (1-second polling)
-- **History graph** (Compose Canvas, up to 10 minutes)
-- **Alarm notifications** when a probe reaches its target temperature (including in the background)
-- **Setup wizard** (AP provisioning + Wi-Fi configuration)
+- **History graph** (Compose Canvas) with locally persisted history; on Grilly+ the fine and coarse history tiers are loaded and merged on connect, so multi-hour cooks keep their graph after the app was closed
+- **Alarm notifications** per probe based on the firmware's alarm state (including in the background), with **Mute** and **Open** actions
+- **Setup wizard** (AP provisioning + Wi-Fi configuration) that detects the firmware via `/api/info` (AP names `FreeGrilly_…`, `GrillyPlus_…`, `Grilleye…`) and waits a bounded time for the device on your home Wi-Fi
 - **Food library** with curated target temperatures (beef, pork, poultry, fish, lamb, game)
 - **Phone & Tablet** – adaptive layout (BottomBar / NavigationRail)
 - **Bilingual** DE/EN (system locale + in-app toggle)
 - **Demo mode** – usable without hardware
 - Custom food entries + favorites (Room database)
-- **In-app OTA** – update device firmware directly from the app (when supported by firmware)
-- **Device status & diagnostics** – Grilly status screen with energy (battery %, cell voltage) and diagnostics (reason for the last restart / last power-off)
+- **In-app OTA** – update device firmware directly from the app (when supported by firmware); if an admin password is set (Grilly+) the app asks for it and can remember it encrypted with the Android Keystore if you choose
+- **Probe calibration** (offset in °C) — only shown when the firmware reports `calibration_offset`
+- **Device status & diagnostics** – everything the firmware provides (firmware name/version, API version, battery %, cell voltage, charging, Wi-Fi signal, reason for the last restart / last power-off, UUID, mDNS hostname); unknown fields are hidden
 
 ## Requirements
 
 | | |
 |---|---|
-| **Device** | Free-Grilly (Grilleye Max with [BattloXX firmware](https://github.com/BattloXX/free-grilly/releases/latest)) |
+| **Device** | Grilleye Max with [Free-Grilly](https://github.com/BattloXX/free-grilly/releases/latest) or [Grilly+](https://github.com/bardesss/grilly-plus) firmware |
 | **Android** | 8.0 Oreo (API 26) or newer |
 | **Network** | Device and phone on the same Wi-Fi network |
 
@@ -132,4 +138,6 @@ The debug APK will be at `app/build/outputs/apk/debug/`.
 
 ## API
 
-The firmware exposes a local HTTP REST API. Details: [`docs/android_app.md`](https://github.com/BattloXX/free-grilly/blob/master/docs/android_app.md) in the firmware repo.
+The firmware exposes a local HTTP REST API. Details: [`docs/android_app.md`](https://github.com/BattloXX/free-grilly/blob/master/docs/android_app.md) in the firmware repo (Free-Grilly) and `docs/openapi.yaml` in the [Grilly+ repo](https://github.com/bardesss/grilly-plus).
+
+Internally the app talks to the device through `GrillyDeviceApi` with a `FreeGrillyApiAdapter` or `GrillyPlusApiAdapter`, chosen on connect from `/api/info`. Prepared but only active once the firmware reports it: cook sessions by firmware ID (`cook_session`), per-probe mute (`alarm_probe_mute`) and the SSE stream (`events`).
