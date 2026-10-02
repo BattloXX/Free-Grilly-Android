@@ -89,11 +89,7 @@ class GrillyRepository @Inject constructor(
                         status = status,
                         history = historyBuffers.mapValues { it.value.toList() },
                     )
-                    if (status.alarmActive) {
-                        alarmController.onAlarmActive(status.probes.filter { it.alarm })
-                    } else {
-                        alarmController.onAlarmCleared()
-                    }
+                    alarmController.onAlarmStateChanged(status.alarmActive, status.probes, status.temperatureUnit)
                 } catch (_: Exception) {
                     // A single miss is expected under multi-device contention — only flip to
                     // Disconnected after several consecutive failures (see MAX_POLL_FAILURES).
@@ -252,10 +248,12 @@ class GrillyRepository @Inject constructor(
             .map { TempSample(it.tsMs, it.tempCx10 / 10f) }
 
     suspend fun muteAlarm(probeId: Int? = null): Result<Unit> = runCatching {
-        if (activeCapabilities.supports(Capabilities.ALARM_MUTE)) {
+        if (activeCapabilities.supports(Capabilities.ALARM_MUTE) ||
+            (probeId != null && activeCapabilities.hasFlag(Capabilities.ALARM_PROBE_MUTE))
+        ) {
             deviceApiHolder.api.muteAlarm(probeId)
         }
-        alarmController.onAlarmCleared()
+        alarmController.dismissNotifications(probeId)
     }
 
     suspend fun patchProbe(patch: ProbePatch): Result<Unit> = runCatching { deviceApiHolder.api.updateProbe(patch) }

@@ -29,6 +29,14 @@
     <string name="reconnect">Erneut verbinden</string>
     <string name="add_device">Gerät hinzufügen</string>
     <string name="alarm_ready">Fertig</string>
+    <string name="alarm_channel_name">Grill-Alarm</string>
+    <string name="alarm_channel_description">Benachrichtigung wenn eine Sonde die Zieltemperatur erreicht</string>
+    <string name="alarm_notification_title">%1$s fertig</string>
+    <string name="alarm_notification_text">%1$s hat %2$d °%3$s erreicht</string>
+    <string name="alarm_action_mute">Stumm</string>
+    <string name="alarm_action_open">Öffnen</string>
+    <string name="foreground_notification_title">Free-Grilly läuft</string>
+    <string name="foreground_notification_text">Temperaturüberwachung aktiv</string>
 
     <!-- ProbeDetail -->
     <string name="temperature_history">Temperaturverlauf</string>

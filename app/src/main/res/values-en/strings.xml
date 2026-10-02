@@ -29,6 +29,14 @@
     <string name="reconnect">Reconnect</string>
     <string name="add_device">Add device</string>
     <string name="alarm_ready">Ready</string>
+    <string name="alarm_channel_name">Grill alarm</string>
+    <string name="alarm_channel_description">Notifies you when a probe reaches its target temperature</string>
+    <string name="alarm_notification_title">%1$s ready</string>
+    <string name="alarm_notification_text">%1$s reached %2$d °%3$s</string>
+    <string name="alarm_action_mute">Mute</string>
+    <string name="alarm_action_open">Open</string>
+    <string name="foreground_notification_title">Free-Grilly is running</string>
+    <string name="foreground_notification_text">Temperature monitoring is active</string>
 
     <!-- ProbeDetail -->
     <string name="temperature_history">Temperature history</string>

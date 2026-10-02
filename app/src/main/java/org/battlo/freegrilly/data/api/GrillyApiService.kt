@@ -37,6 +37,9 @@ interface GrillyApiService {
     @POST("/api/alarm/mute")
     suspend fun muteAlarm(@Body body: Map<String, String> = emptyMap()): SuccessResponse
 
+    @POST("/api/probes/{probeId}/alarm/mute")
+    suspend fun muteProbeAlarm(@Path("probeId") probeId: Int): SuccessResponse
+
     @GET("/api/info")
     suspend fun getInfo(): DeviceInfo
 

@@ -27,6 +27,8 @@ object Capabilities {
     const val OTA          = "ota"
     const val CLEAR_HISTORY = "clear_history"
     const val ALARM_PROBES = "alarm_probes"
+    /** Per-probe alarm muting through POST /api/probes/{id}/alarm/mute. */
+    const val ALARM_PROBE_MUTE = "alarm_probe_mute"
     const val CALIBRATION_OFFSET = "calibration_offset"
     const val DIAGNOSTICS = "diagnostics"
 

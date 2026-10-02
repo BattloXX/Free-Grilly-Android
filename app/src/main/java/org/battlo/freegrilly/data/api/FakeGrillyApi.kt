@@ -106,6 +106,8 @@ class FakeGrillyApi @Inject constructor() : GrillyApiService {
 
     override suspend fun muteAlarm(body: Map<String, String>) = SuccessResponse(success = true)
 
+    override suspend fun muteProbeAlarm(probeId: Int) = SuccessResponse(success = true)
+
     override suspend fun getInfo() = DeviceInfo(
         uuid = "demo-1234-5678-abcd",
         name = "Demo Griller",

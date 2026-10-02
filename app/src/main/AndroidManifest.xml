@@ -83,6 +83,10 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".receiver.AlarmMuteReceiver"
+            android:exported="false" />
+
         <!-- FileProvider for sharing downloaded APK with the package installer -->
         <provider
             android:name="androidx.core.content.FileProvider"

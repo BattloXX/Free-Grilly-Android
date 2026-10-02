@@ -16,6 +16,7 @@ data class DeviceFeatures(
     val clearHistory: Boolean = false,
     val diagnostics: Boolean = false,
     val alarmProbes: Boolean = false,
+    val perProbeMute: Boolean = false,
 ) {
     companion object {
         fun from(capabilities: Set<String>): DeviceFeatures {
@@ -30,6 +31,7 @@ data class DeviceFeatures(
                 clearHistory = normalized.hasFlag(Capabilities.CLEAR_HISTORY),
                 diagnostics = normalized.hasFlag(Capabilities.DIAGNOSTICS),
                 alarmProbes = normalized.hasFlag(Capabilities.ALARM_PROBES),
+                perProbeMute = normalized.hasFlag(Capabilities.ALARM_PROBE_MUTE),
             )
         }
     }
