@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +34,7 @@ fun DeviceOtaSection(
     val uriHandler = LocalUriHandler.current
     val colors = LocalGrillyColors.current
     var adminPassword by remember { mutableStateOf("") }
+    var rememberPassword by remember { mutableStateOf(false) }
 
     if (!supportsOta) return
 
@@ -159,19 +161,15 @@ fun DeviceOtaSection(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        OutlinedTextField(
-                            value = adminPassword,
-                            onValueChange = { adminPassword = it },
-                            label = { Text(stringResource(R.string.ota_admin_password_hint)) },
-                            supportingText = { Text(stringResource(R.string.ota_admin_password_optional)) },
-                            singleLine = true,
-                        )
                         Button(
-                            onClick = { viewModel.uploadFirmware(s.file, s.info, adminPassword) },
+                            onClick = { viewModel.beginUpload(s.file, s.info) },
                             colors = ButtonDefaults.buttonColors(containerColor = colors.emberOrange),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
                             Text(stringResource(R.string.upload_firmware))
+                        }
+                        TextButton(onClick = viewModel::forgetRememberedPassword) {
+                            Text(stringResource(R.string.ota_forget_password))
                         }
                     }
                 }
@@ -186,6 +184,8 @@ fun DeviceOtaSection(
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
+
+            is OtaState.NeedsPassword -> Unit
 
             is OtaState.Done -> {
                 AssistChip(
@@ -214,5 +214,56 @@ fun DeviceOtaSection(
                 }
             }
         }
+    }
+
+    if (state is OtaState.NeedsPassword) {
+        val passwordState = state as OtaState.NeedsPassword
+        AlertDialog(
+            onDismissRequest = {
+                adminPassword = ""
+                rememberPassword = false
+                viewModel.cancelPasswordPrompt(passwordState.file, passwordState.info)
+            },
+            title = { Text(stringResource(R.string.ota_admin_password_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (passwordState.wrong) {
+                        Text(
+                            stringResource(R.string.ota_admin_password_wrong),
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                    OutlinedTextField(
+                        value = adminPassword,
+                        onValueChange = { adminPassword = it },
+                        label = { Text(stringResource(R.string.ota_admin_password_hint)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = rememberPassword, onCheckedChange = { rememberPassword = it })
+                        Text(stringResource(R.string.ota_remember_password))
+                    }
+                    TextButton(onClick = viewModel::forgetRememberedPassword) {
+                        Text(stringResource(R.string.ota_forget_password))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val password = adminPassword
+                    adminPassword = ""
+                    viewModel.submitPassword(passwordState.file, passwordState.info, password, rememberPassword)
+                    rememberPassword = false
+                }) { Text(stringResource(R.string.upload_firmware)) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    adminPassword = ""
+                    rememberPassword = false
+                    viewModel.cancelPasswordPrompt(passwordState.file, passwordState.info)
+                }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
     }
 }

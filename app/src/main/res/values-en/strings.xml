@@ -46,7 +46,6 @@
     <string name="probe_name">Probe name</string>
     <string name="target_temperature_label">Target temperature (°C)</string>
     <string name="save">Save</string>
-    <string name="cancel">Cancel</string>
     <string name="clear_history">Clear history</string>
     <string name="probe_calibration">Probe calibration</string>
     <string name="probe_calibration_description">Corrects the measured temperature. The offset is sent to the probe in °C.</string>
@@ -158,6 +157,11 @@
     <string name="firmware_update_done">Firmware %1$s installed</string>
     <string name="ota_admin_password_hint">Admin password</string>
     <string name="ota_admin_password_optional">Only required for protected Grilly+ updates.</string>
+    <string name="ota_admin_password_title">Admin password required</string>
+    <string name="ota_admin_password_wrong">The admin password is incorrect.</string>
+    <string name="ota_remember_password">Remember on this device</string>
+    <string name="ota_forget_password">Forget saved password</string>
+    <string name="cancel">Cancel</string>
 
     <!-- §8 Power-Saving (only visible when device reports power_saving capability) -->
     <string name="settings_power_saving">Power saving</string>

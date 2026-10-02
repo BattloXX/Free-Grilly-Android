@@ -4,7 +4,6 @@ import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,7 +19,9 @@ import kotlinx.coroutines.launch
 import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
+import org.battlo.freegrilly.data.device.GrillyPlusApiAdapter
 import org.battlo.freegrilly.data.hasFlag
+import org.battlo.freegrilly.data.security.OtaPasswordStore
 import org.battlo.freegrilly.data.update.DeviceFirmwareChecker
 import org.battlo.freegrilly.data.update.DeviceFirmwareInfo
 import java.io.File
@@ -41,9 +42,8 @@ class DeviceOtaViewModel @Inject constructor(
     private val firmwareChecker: DeviceFirmwareChecker,
     private val deviceApiHolder: GrillyDeviceApiHolder,
     private val repository: GrillyRepository,
+    private val otaPasswordStore: OtaPasswordStore,
 ) : ViewModel() {
-
-    private val TAG = "DeviceOtaViewModel"
 
     sealed interface OtaState {
         object Idle : OtaState
@@ -52,6 +52,10 @@ class DeviceOtaViewModel @Inject constructor(
         data class Available(val info: DeviceFirmwareInfo) : OtaState
         data class Downloading(val progress: Int, val info: DeviceFirmwareInfo) : OtaState
         data class ReadyToUpload(val file: File, val info: DeviceFirmwareInfo) : OtaState
+        /** Password never belongs to this state; it stays in the composable input only. */
+        class NeedsPassword(val file: File, val info: DeviceFirmwareInfo, val wrong: Boolean) : OtaState {
+            override fun toString() = "NeedsPassword(wrong=$wrong)"
+        }
         data class Uploading(val progress: Int, val info: DeviceFirmwareInfo) : OtaState
         data class Done(val info: DeviceFirmwareInfo) : OtaState
         data class Error(val message: String) : OtaState
@@ -137,24 +141,74 @@ class DeviceOtaViewModel @Inject constructor(
         }
     }
 
-    fun uploadFirmware(file: File, info: DeviceFirmwareInfo, adminPassword: String = "") {
+    fun beginUpload(file: File, info: DeviceFirmwareInfo) {
+        viewModelScope.launch {
+            // ElegantOTA / Free-Grilly remains its existing unauthenticated PUT flow.
+            if (deviceApiHolder.api !is GrillyPlusApiAdapter) {
+                uploadFirmware(file, info, "", usedStoredPassword = false)
+                return@launch
+            }
+            val uuid = selectedDeviceUuid() ?: run {
+                uploadFirmware(file, info, "", usedStoredPassword = false)
+                return@launch
+            }
+            val stored = otaPasswordStore.load(uuid)
+            when (nextOtaPasswordAction(
+                repository.activeCapabilities.hasFlag(Capabilities.OTA_AUTH), stored != null,
+            )) {
+                OtaPasswordAction.ASK_FOR_PASSWORD -> _state.value = OtaState.NeedsPassword(file, info, wrong = false)
+                OtaPasswordAction.UPLOAD_WITH_STORED_PASSWORD -> uploadFirmware(file, info, stored.orEmpty(), true)
+                OtaPasswordAction.UPLOAD_WITHOUT_PASSWORD -> uploadFirmware(file, info, "", false)
+            }
+        }
+    }
+
+    fun submitPassword(file: File, info: DeviceFirmwareInfo, password: String, remember: Boolean) {
+        viewModelScope.launch {
+            val uuid = selectedDeviceUuid()
+            if (remember && uuid != null) runCatching { otaPasswordStore.save(uuid, password) }
+            uploadFirmware(file, info, password, usedStoredPassword = false)
+        }
+    }
+
+    fun forgetRememberedPassword() {
+        viewModelScope.launch { selectedDeviceUuid()?.let { otaPasswordStore.delete(it) } }
+    }
+
+    private suspend fun selectedDeviceUuid(): String? = repository.selectedDeviceUuid()
+
+    private fun uploadFirmware(file: File, info: DeviceFirmwareInfo, adminPassword: String, usedStoredPassword: Boolean) {
         _state.value = OtaState.Uploading(0, info)
         viewModelScope.launch {
+            var password = adminPassword
             runCatching {
-                deviceApiHolder.api.uploadFirmware(file, adminPassword)
+                deviceApiHolder.api.uploadFirmware(file, password)
             }.onSuccess {
-                Log.d(TAG, "OTA upload success")
                 _state.value = OtaState.Done(info)
                 file.delete()
             }.onFailure { e ->
-                Log.w(TAG, "OTA upload failed", e)
-                val detail = if (e is retrofit2.HttpException && e.code() == 401) "Admin-Passwort fehlt oder ist falsch." else e.message
-                _state.value = OtaState.Error("Upload fehlgeschlagen: $detail")
+                val code = (e as? retrofit2.HttpException)?.code()
+                if (deviceApiHolder.api is GrillyPlusApiAdapter && code == 401) {
+                    // A password saved before a failed manual attempt is stale too.
+                    if (shouldDiscardStoredPassword(code, usedStoredPassword) || !usedStoredPassword) {
+                        selectedDeviceUuid()?.let { otaPasswordStore.delete(it) }
+                    }
+                    _state.value = OtaState.NeedsPassword(file, info, wrong = true)
+                } else {
+                    _state.value = OtaState.Error("Upload fehlgeschlagen.")
+                }
+            }.also {
+                // Do not retain a secret in a ViewModel field after this request completes.
+                password = ""
             }
         }
     }
 
     fun dismissError() {
         _state.value = OtaState.Idle
+    }
+
+    fun cancelPasswordPrompt(file: File, info: DeviceFirmwareInfo) {
+        _state.value = OtaState.ReadyToUpload(file, info)
     }
 }
