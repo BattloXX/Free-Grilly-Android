@@ -32,6 +32,7 @@ object NetworkModule {
         OkHttpClient.Builder()
             .addInterceptor(interceptor)
             .addInterceptor(HttpLoggingInterceptor().apply {
+                redactHeader("Authorization")
                 level = HttpLoggingInterceptor.Level.BASIC
             })
             .connectTimeout(5, TimeUnit.SECONDS)

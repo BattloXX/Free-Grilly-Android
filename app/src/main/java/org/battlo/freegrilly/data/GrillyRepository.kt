@@ -30,6 +30,7 @@ class GrillyRepository @Inject constructor(
     private val deviceStore: DeviceStore,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
+    suspend fun selectedDeviceUuid(): String? = deviceStore.selectedDeviceUuid.first()
     private val TAG = "GrillyRepository"
 
     // RAM buffer feeds the compact dashboard sparkline (recent live values).

@@ -25,6 +25,8 @@ object Capabilities {
     const val POWER_SAVING = "power_saving"
     /** In-app firmware OTA via PUT /update (ElegantOTA-compatible). */
     const val OTA          = "ota"
+    /** Optional device hint that OTA requires the Grilly+ admin password. */
+    const val OTA_AUTH     = "ota_auth"
     const val CLEAR_HISTORY = "clear_history"
     const val ALARM_PROBES = "alarm_probes"
     /** Per-probe alarm muting through POST /api/probes/{id}/alarm/mute. */
