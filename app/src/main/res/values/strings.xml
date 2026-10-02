@@ -11,7 +11,7 @@
     <!-- Onboarding -->
     <string name="onboarding_setup">Gerät einrichten</string>
     <string name="step_ap_connect_title">Mit Griller verbinden</string>
-    <string name="step_ap_connect_desc">Verbinde dein Smartphone mit dem WLAN-Netzwerk deines Grillers (FreeGrilly_xxxxxxxx, GrillyPlus_XXXXXX oder Grilleye_xxxxxxxx) und kehre dann hierher zurück. Das Grilly+-Hotspot-Passwort steht auf dem Geräte-Infoscreen.</string>
+    <string name="step_ap_connect_desc">Verbinde dein Smartphone mit dem offenen WLAN-Netzwerk deines Grillers (kein Passwort erforderlich) und kehre dann hierher zurück. Übliche Namen: FreeGrilly_xxxxxx, GrillyPlus_xxxxxx oder Grilleye. Die genaue AP-SSID steht auf dem Geräte-Infoscreen.</string>
     <string name="connected_continue">Verbunden – weiter</string>
     <string name="use_demo_mode">Demo-Modus verwenden</string>
     <string name="scanning_wifi">Suche WLAN-Netzwerke …</string>
@@ -22,6 +22,13 @@
     <string name="provisioning">Konfigurierung läuft …</string>
     <string name="discovering_device">Suche Gerät im Netzwerk …</string>
     <string name="connecting">Verbinde …</string>
+    <string name="onboarding_detected_firmware">Erkannt: %1$s %2$s</string>
+    <string name="firmware_name_free_grilly">Free-Grilly</string>
+    <string name="waiting_for_home_wifi">Verbinde dein Smartphone jetzt wieder mit deinem Heim-WLAN. Die Suche läuft bis zu einer Minute weiter.</string>
+    <string name="onboarding_error_title">Fehler</string>
+    <string name="onboarding_error_networks_not_found">Keine Netzwerke gefunden. Stelle sicher, dass du mit dem FreeGrilly-, GrillyPlus- oder Grilleye-AP verbunden bist. Die genaue AP-SSID steht auf dem Geräte-Infoscreen.</string>
+    <string name="onboarding_error_device_not_found">Gerät nicht gefunden. Verbinde dein Smartphone mit dem Heim-WLAN und versuche es erneut.</string>
+    <string name="onboarding_error_request_failed">Fehler: %1$s</string>
 
     <!-- Dashboard -->
     <string name="disconnected">Getrennt</string>

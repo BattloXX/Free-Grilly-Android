@@ -38,8 +38,10 @@ fun OnboardingScreen(
     error?.let { msg ->
         AlertDialog(
             onDismissRequest = { viewModel.clearError() },
-            title = { Text("Fehler") },
-            text = { Text(msg) },
+            title = { Text(stringResource(R.string.onboarding_error_title)) },
+            text = { Text(if (msg is OnboardingError.RequestFailed) {
+                stringResource(msg.messageRes, msg.detail.orEmpty())
+            } else stringResource(msg.messageRes)) },
             confirmButton = { TextButton(onClick = { viewModel.clearError() }) { Text("OK") } },
         )
     }
@@ -80,13 +82,24 @@ fun OnboardingScreen(
                 onNext = { viewModel.onApConnected() },
                 onDemo = { viewModel.skipToDemo() },
             )
-            is OnboardingStep.WifiScan -> LoadingStep(stringResource(R.string.scanning_wifi))
+            is OnboardingStep.WifiScan -> {
+                val firmwareName = s.firmware.firmwareName.takeIf { it.equals("grilly-plus", ignoreCase = true) }
+                    ?: stringResource(R.string.firmware_name_free_grilly)
+                LoadingStep(
+                    stringResource(R.string.scanning_wifi),
+                    stringResource(R.string.onboarding_detected_firmware, firmwareName, s.firmware.firmwareVersion),
+                )
+            }
             is OnboardingStep.Credentials -> CredentialsStep(
                 networks = s.networks,
+                firmware = s.firmware,
                 onSubmit = { ssid, pw, name, unit -> viewModel.onCredentialsSubmitted(ssid, pw, name, unit) },
             )
             is OnboardingStep.Provisioning -> LoadingStep(stringResource(R.string.provisioning))
-            is OnboardingStep.Discovery -> LoadingStep(stringResource(R.string.discovering_device))
+            is OnboardingStep.Discovery -> LoadingStep(
+                stringResource(R.string.discovering_device),
+                stringResource(R.string.waiting_for_home_wifi),
+            )
             is OnboardingStep.Complete -> LoadingStep(stringResource(R.string.connecting))
         }
     }
@@ -111,7 +124,7 @@ private fun ApConnectStep(onNext: () -> Unit, onDemo: () -> Unit) {
 }
 
 @Composable
-private fun LoadingStep(message: String) {
+private fun LoadingStep(message: String, supportingMessage: String? = null) {
     Column(
         Modifier.fillMaxWidth().padding(top = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -119,6 +132,9 @@ private fun LoadingStep(message: String) {
     ) {
         CircularProgressIndicator()
         Text(message, style = MaterialTheme.typography.bodyLarge)
+        supportingMessage?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 
@@ -126,6 +142,7 @@ private fun LoadingStep(message: String) {
 @Composable
 private fun CredentialsStep(
     networks: List<WifiNetwork>,
+    firmware: org.battlo.freegrilly.data.device.model.DeviceIdentity,
     onSubmit: (String, String, String, String) -> Unit,
 ) {
     var selectedSsid by remember { mutableStateOf(networks.firstOrNull()?.ssid ?: "") }
@@ -137,6 +154,13 @@ private fun CredentialsStep(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(stringResource(R.string.step_credentials_title), style = MaterialTheme.typography.headlineSmall)
+        val firmwareName = firmware.firmwareName.takeIf { it.equals("grilly-plus", ignoreCase = true) }
+            ?: stringResource(R.string.firmware_name_free_grilly)
+        Text(
+            stringResource(R.string.onboarding_detected_firmware, firmwareName, firmware.firmwareVersion),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         ExposedDropdownMenuBox(expanded = expandSsid, onExpandedChange = { expandSsid = it }) {
             OutlinedTextField(

@@ -11,7 +11,7 @@
     <!-- Onboarding -->
     <string name="onboarding_setup">Set up device</string>
     <string name="step_ap_connect_title">Connect to grill</string>
-    <string name="step_ap_connect_desc">Connect your smartphone to the grill\'s Wi-Fi network (FreeGrilly_xxxxxxxx, GrillyPlus_XXXXXX or Grilleye_xxxxxxxx), then return here. The Grilly+ hotspot password is shown on the device information screen.</string>
+    <string name="step_ap_connect_desc">Connect your smartphone to your grill\'s open Wi-Fi network (no password required), then return here. Common names are FreeGrilly_xxxxxx, GrillyPlus_xxxxxx, and Grilleye. The exact AP SSID is shown on the device information screen.</string>
     <string name="connected_continue">Connected – continue</string>
     <string name="use_demo_mode">Use demo mode</string>
     <string name="scanning_wifi">Scanning Wi-Fi networks…</string>
@@ -22,6 +22,13 @@
     <string name="provisioning">Configuring…</string>
     <string name="discovering_device">Looking for device on network…</string>
     <string name="connecting">Connecting…</string>
+    <string name="onboarding_detected_firmware">Detected: %1$s %2$s</string>
+    <string name="firmware_name_free_grilly">Free-Grilly</string>
+    <string name="waiting_for_home_wifi">Now reconnect your smartphone to your home Wi-Fi. The search will continue for up to one minute.</string>
+    <string name="onboarding_error_title">Error</string>
+    <string name="onboarding_error_networks_not_found">No networks found. Make sure you are connected to the FreeGrilly, GrillyPlus, or Grilleye AP. The exact AP SSID is shown on the device information screen.</string>
+    <string name="onboarding_error_device_not_found">Device not found. Connect your smartphone to the home Wi-Fi and try again.</string>
+    <string name="onboarding_error_request_failed">Error: %1$s</string>
 
     <!-- Dashboard -->
     <string name="disconnected">Disconnected</string>
