@@ -83,7 +83,12 @@ abstract class RetrofitGrillyDeviceApi(protected val service: GrillyApiService) 
     override suspend fun wifiScan(): List<DeviceWifiNetwork> = service.getWifiNetworks().map {
         DeviceWifiNetwork(it.ssid, it.resolvedRssi, it.resolvedEncryption)
     }
-    override suspend fun muteAlarm(probeId: Int?) { service.muteAlarm() }
+    override suspend fun muteAlarm(probeId: Int?) {
+        when (alarmMuteEndpoint(capabilities, probeId)) {
+            AlarmMuteEndpoint.GLOBAL -> service.muteAlarm()
+            AlarmMuteEndpoint.PROBE -> service.muteProbeAlarm(requireNotNull(probeId))
+        }
+    }
 }
 
 /** Free-Grilly's probe endpoint replaces the submitted probe, so preserve all other fields. */
