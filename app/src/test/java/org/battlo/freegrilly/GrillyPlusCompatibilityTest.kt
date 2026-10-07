@@ -1,10 +1,14 @@
 package org.battlo.freegrilly
 
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.hasFlag
+import org.battlo.freegrilly.data.api.FakeGrillyApi
+import org.battlo.freegrilly.data.api.GrillyApiService
 import org.battlo.freegrilly.data.api.models.DeviceInfo
 import org.battlo.freegrilly.data.api.models.GrillStatusResponse
+import org.battlo.freegrilly.data.device.GrillyPlusApiAdapter
 import org.battlo.freegrilly.data.api.models.GrillyPlusHistoryTier
 import org.battlo.freegrilly.data.history.GrillyPlusHistoryMapper
 import org.junit.Assert.*
@@ -35,6 +39,23 @@ class GrillyPlusCompatibilityTest {
     @Test fun `capability aliases normalize ota upload`() {
         val caps = Capabilities.normalize(listOf("ota_upload", "clear_history", "diagnostics"))
         assertTrue(caps.hasFlag(Capabilities.OTA)); assertTrue(caps.hasFlag(Capabilities.CLEAR_HISTORY)); assertFalse(caps.hasFlag(Capabilities.EVENTS))
+    }
+
+    @Test fun `Grilly Plus v3 capabilities and status map through adapter`() = runBlocking {
+        val info = json.decodeFromString<DeviceInfo>(fixture("grilly-plus-info-v3.json"))
+        val capabilities = Capabilities.normalize(info.capabilities)
+        assertTrue(capabilities.hasFlag(Capabilities.ALARM_PROBE_MUTE))
+        assertTrue(capabilities.hasFlag(Capabilities.OTA_AUTH))
+        assertTrue(capabilities.hasFlag(Capabilities.COOK_SESSION))
+        assertFalse(capabilities.hasFlag(Capabilities.EVENTS))
+
+        val grill = json.decodeFromString<GrillStatusResponse>(fixture("grilly-plus-grill-cook-session.json"))
+        val adapter = GrillyPlusApiAdapter(object : GrillyApiService by FakeGrillyApi() {
+            override suspend fun getGrillStatus() = grill
+        })
+        val status = adapter.status()
+        assertEquals(7_500L, status.diagnostics.uptimeSeconds)
+        assertEquals("c-1a2b3c4d-0001", status.cookSessionId)
     }
 
     @Test fun `Grilly Plus selects ota asset never full image`() {

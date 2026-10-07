@@ -36,7 +36,7 @@ Native Android-App für das **Free-Grilly** Grillthermometer (BattloXX-Fork der 
 - Eigene Grillgüter + Favoriten (Room-Datenbank)
 - **In-App OTA** – Firmware-Update direkt aus der App heraus (wenn vom Gerät unterstützt); bei gesetztem Admin-Passwort (Grilly+) fragt die App danach, auf Wunsch wird es per Android Keystore verschlüsselt gemerkt
 - **Sonden-Kalibrierung** (Offset in °C) – nur sichtbar, wenn die Firmware `calibration_offset` meldet
-- **Geräte-Status & Diagnose** – alle von der Firmware gelieferten Angaben (Firmware-Name/-Version, API-Version, Akku %, Zellspannung, Laden, WLAN-Signal, Grund des letzten Neustarts / der letzten Abschaltung, UUID, mDNS-Hostname); unbekannte Felder werden ausgeblendet
+- **Geräte-Status & Diagnose** – alle von der Firmware gelieferten Angaben (Firmware-Name/-Version, API-Version, Akku %, Zellspannung, Laden, WLAN-Signal, Laufzeit, Grund des letzten Neustarts / der letzten Abschaltung, UUID, mDNS-Hostname); unbekannte Felder werden ausgeblendet
 
 ## Voraussetzungen
 
@@ -111,7 +111,7 @@ Native Android app for the **Free-Grilly** grill thermometer (BattloXX fork of t
 - Custom food entries + favorites (Room database)
 - **In-app OTA** – update device firmware directly from the app (when supported by firmware); if an admin password is set (Grilly+) the app asks for it and can remember it encrypted with the Android Keystore if you choose
 - **Probe calibration** (offset in °C) — only shown when the firmware reports `calibration_offset`
-- **Device status & diagnostics** – everything the firmware provides (firmware name/version, API version, battery %, cell voltage, charging, Wi-Fi signal, reason for the last restart / last power-off, UUID, mDNS hostname); unknown fields are hidden
+- **Device status & diagnostics** – everything the firmware provides (firmware name/version, API version, battery %, cell voltage, charging, Wi-Fi signal, uptime, reason for the last restart / last power-off, UUID, mDNS hostname); unknown fields are hidden
 
 ## Requirements
 

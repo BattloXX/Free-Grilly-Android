@@ -101,6 +101,7 @@
     <string name="status_section_diagnostics">Diagnose</string>
     <string name="status_last_reset">Letzter Neustart</string>
     <string name="status_last_off">Letzte Abschaltung</string>
+    <string name="status_uptime">Laufzeit</string>
     <!-- Reset-Gründe -->
     <string name="reset_poweron">Einschalten</string>
     <string name="reset_deepsleep">Aufwachen (Knopf)</string>

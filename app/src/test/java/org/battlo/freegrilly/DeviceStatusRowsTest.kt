@@ -15,6 +15,7 @@ class DeviceStatusRowsTest {
             firmwareName = "grilly-plus", firmwareVersion = "1.2.3", apiVersion = "1",
             batteryPercent = 86, batteryMillivolts = 3942, batteryCharging = false,
             wifiSignalDbm = -61, lastResetReason = "poweron", lastOffReason = "button",
+            uptimeSeconds = 7_500,
             uuid = "device-id", mdnsHostname = "grilly.local",
         ))
 
@@ -25,6 +26,7 @@ class DeviceStatusRowsTest {
                 DeviceStatusRow.Kind.WIFI_RSSI, DeviceStatusRow.Kind.BATTERY_PERCENT,
                 DeviceStatusRow.Kind.BATTERY_VOLTAGE, DeviceStatusRow.Kind.BATTERY_CHARGING,
                 DeviceStatusRow.Kind.LAST_RESET_REASON, DeviceStatusRow.Kind.LAST_OFF_REASON,
+                DeviceStatusRow.Kind.UPTIME,
             ),
             rows.map { it.kind },
         )
@@ -40,5 +42,13 @@ class DeviceStatusRowsTest {
 
         assertTrue(rows.isEmpty())
         assertFalse(rows.any { it.kind == DeviceStatusRow.Kind.BATTERY_VOLTAGE })
+        assertFalse(rows.any { it.kind == DeviceStatusRow.Kind.UPTIME })
+    }
+
+    @Test
+    fun `uptime is formatted when present`() {
+        val row = DeviceStatusRows.from(DeviceStatusUi(uptimeSeconds = 7_500)).single()
+        assertEquals(DeviceStatusRow.Kind.UPTIME, row.kind)
+        assertEquals("2 h 05 min", row.value)
     }
 }

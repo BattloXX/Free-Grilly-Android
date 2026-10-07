@@ -33,6 +33,8 @@ object Capabilities {
     const val ALARM_PROBE_MUTE = "alarm_probe_mute"
     const val CALIBRATION_OFFSET = "calibration_offset"
     const val DIAGNOSTICS = "diagnostics"
+    /** Firmware cook-session id in GET /api/grill. */
+    const val COOK_SESSION = "cook_session"
 
     /** Firmware-specific capability names normalized to the app's names. */
     fun normalize(flags: List<String>): Set<String> = flags.map {

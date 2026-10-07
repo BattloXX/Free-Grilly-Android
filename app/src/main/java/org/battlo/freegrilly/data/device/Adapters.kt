@@ -48,7 +48,10 @@ private fun GrillStatusResponse.state(identity: DeviceIdentity) = GrillState(
     alarmActive = isAlarmSounding,
     cookSessionId = resolvedCookSessionId,
     probes = probes.map { it.probe() },
-    diagnostics = Diagnostics(batteryMillivolts.takeIf { it != 0 }, lastOffReason.ifBlank { null }, lastResetReason.ifBlank { null }),
+    diagnostics = Diagnostics(
+        batteryMillivolts.takeIf { it != 0 }, lastOffReason.ifBlank { null },
+        lastResetReason.ifBlank { null }, uptimeSeconds,
+    ),
 )
 
 private fun ProbeStatus.probe() = Probe(
