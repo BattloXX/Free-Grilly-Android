@@ -32,7 +32,8 @@ class DeviceAdapterTest {
         val scalarForm = json.decodeFromString<org.battlo.freegrilly.data.api.models.GrillStatusResponse>(
             "{\"cook_session_id\":\"cook-43\"}"
         )
-        assertEquals("cook-42", objectForm.resolvedCookSessionId)
+        assertEquals("c-1a2b3c4d-0001", objectForm.resolvedCookSessionId)
+        assertEquals(7_500L, objectForm.uptimeSeconds)
         assertEquals("cook-43", scalarForm.resolvedCookSessionId)
     }
 

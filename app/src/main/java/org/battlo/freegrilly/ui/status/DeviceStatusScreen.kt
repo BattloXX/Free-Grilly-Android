@@ -87,6 +87,7 @@ fun DeviceStatusScreen(
             // firmware reports it (older firmware leaves these blank).
             val diagnosticsRows = rows.filter { it.kind in setOf(
                 DeviceStatusRow.Kind.LAST_RESET_REASON, DeviceStatusRow.Kind.LAST_OFF_REASON,
+                DeviceStatusRow.Kind.UPTIME,
             ) }
             if (diagnosticsRows.isNotEmpty()) {
                 StatusCard(stringResource(R.string.status_section_diagnostics)) {
@@ -174,6 +175,7 @@ private fun statusLabel(kind: DeviceStatusRow.Kind): String = when (kind) {
     DeviceStatusRow.Kind.BATTERY_CHARGING -> stringResource(R.string.status_charging)
     DeviceStatusRow.Kind.LAST_RESET_REASON -> stringResource(R.string.status_last_reset)
     DeviceStatusRow.Kind.LAST_OFF_REASON -> stringResource(R.string.status_last_off)
+    DeviceStatusRow.Kind.UPTIME -> stringResource(R.string.status_uptime)
 }
 
 @Composable

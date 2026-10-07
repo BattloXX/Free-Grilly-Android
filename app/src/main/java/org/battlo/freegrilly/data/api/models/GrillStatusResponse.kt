@@ -17,6 +17,7 @@ data class GrillStatusResponse(
     @SerialName("last_off_reason") val lastOffReason: String = "",
     /** ESP32 reset reason at last boot, e.g. "brownout"/"panic"/"deepsleep" (firmware ≥26.07.01). */
     @SerialName("last_reset_reason") val lastResetReason: String = "",
+    @SerialName("uptime_seconds") val uptimeSeconds: Long? = null,
     @SerialName("wifi_connected") val wifiConnected: Boolean? = null,
     @SerialName("wifi_signal") val wifiSignal: Int? = null,
     @SerialName("alarm_active") val alarmActive: Boolean = false,

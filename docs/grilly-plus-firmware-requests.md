@@ -8,6 +8,13 @@ Grilly+ independently and without breaking existing clients.
 
 Everything here is additive. A firmware that adds none of it keeps working exactly as today.
 
+## Status
+
+Implemented in [BattloXX/free-grilly](https://github.com/BattloXX/free-grilly) branch
+`grilly-plus` (PRs #15, #16): `cook_session`, `alarm_probe_mute`, `ota_auth`, and
+`uptime_seconds` (the field name is `uptime_seconds`). `GET /api/events` is implemented,
+but the `events` capability is not yet advertised pending hardware testing.
+
 ## Current baseline (what the app already uses)
 
 `GET /api/info` → `firmware`, `firmware_version`, `api_version`, `unique_id`, `hostname`,
@@ -72,8 +79,7 @@ HTTP 401 (`Wrong admin password`), so this is a UX nicety, not a requirement.
 
 Shown on the status screen when present, hidden otherwise:
 `wifi_signal` (dBm), `battery_percentage`, `battery_millivolts`, `battery_charging`,
-`last_reset_reason`, `last_off_reason`. A device uptime (e.g. `uptime_seconds`) is **not**
-shown today because no firmware field exists; if you add one, tell us the name.
+`last_reset_reason`, `last_off_reason`, `uptime_seconds` (integer seconds since boot).
 
 ## Not needed
 
@@ -95,4 +101,4 @@ Advertising any one of these service types works.
 | Per-probe mute | `POST /api/probes/{id}/alarm/mute` | `alarm_probe_mute` |
 | Push events | `GET /api/events` (SSE, `/api/grill`-shaped frames) | `events` |
 | OTA auth hint | — | `ota_auth` |
-| Uptime | new field, name to be agreed | — |
+| Uptime | `uptime_seconds` in `/api/grill` | — |

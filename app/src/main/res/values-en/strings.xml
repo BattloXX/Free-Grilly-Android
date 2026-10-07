@@ -101,6 +101,7 @@
     <string name="status_section_diagnostics">Diagnostics</string>
     <string name="status_last_reset">Last restart</string>
     <string name="status_last_off">Last power-off</string>
+    <string name="status_uptime">Uptime</string>
     <!-- Reset reasons -->
     <string name="reset_poweron">Power-on</string>
     <string name="reset_deepsleep">Wake (button)</string>

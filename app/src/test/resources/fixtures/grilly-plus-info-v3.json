@@ -1,0 +1,1 @@
+{"firmware":"grilly-plus","firmware_version":"26.10.07.1","api_version":1,"unique_id":"plus-1","hostname":"grilly-plus-1","probe_count":4,"capabilities":["history","eta","clear_history","alarm_mute","alarm_probes","alarm_probe_mute","calibration_offset","diagnostics","ota_upload","ota_auth","cook_session"]}

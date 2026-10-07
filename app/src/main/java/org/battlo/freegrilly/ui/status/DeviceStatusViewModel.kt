@@ -27,6 +27,7 @@ data class DeviceStatusUi(
     val batteryMillivolts: Int? = null,
     val lastOffReason: String = "",
     val lastResetReason: String = "",
+    val uptimeSeconds: Long? = null,
     val wifiConnected: Boolean? = null,
     val wifiSignalDbm: Int? = null,
     val temperatureUnit: String = "celcius",
@@ -40,7 +41,7 @@ data class DeviceStatusRow(val kind: Kind, val value: String) {
     enum class Kind {
         NAME, FIRMWARE_NAME, FIRMWARE_VERSION, API_VERSION, UUID, MDNS_HOSTNAME, IP_ADDRESS,
         WIFI_CONNECTED, WIFI_RSSI, BATTERY_PERCENT, BATTERY_VOLTAGE, BATTERY_CHARGING,
-        LAST_RESET_REASON, LAST_OFF_REASON,
+        LAST_RESET_REASON, LAST_OFF_REASON, UPTIME,
     }
 }
 
@@ -64,6 +65,21 @@ object DeviceStatusRows {
         ui.batteryCharging?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.BATTERY_CHARGING, it.toString())) }
         addText(DeviceStatusRow.Kind.LAST_RESET_REASON, ui.lastResetReason)
         addText(DeviceStatusRow.Kind.LAST_OFF_REASON, ui.lastOffReason)
+        ui.uptimeSeconds?.let { add(DeviceStatusRow(DeviceStatusRow.Kind.UPTIME, formatUptime(it))) }
+    }
+
+    private fun formatUptime(seconds: Long): String {
+        val safeSeconds = seconds.coerceAtLeast(0)
+        val days = safeSeconds / 86_400
+        val hours = safeSeconds / 3_600 % 24
+        val minutes = safeSeconds / 60 % 60
+        val remainingSeconds = safeSeconds % 60
+        return when {
+            days > 0 -> "$days d $hours h"
+            hours > 0 -> "$hours h ${minutes.toString().padStart(2, '0')} min"
+            minutes > 0 -> "$minutes min ${remainingSeconds.toString().padStart(2, '0')} s"
+            else -> "$remainingSeconds s"
+        }
     }
 }
 
@@ -103,6 +119,7 @@ class DeviceStatusViewModel @Inject constructor(
             batteryMillivolts = status?.diagnostics?.batteryMillivolts,
             lastOffReason = status?.diagnostics?.lastOffReason.orEmpty(),
             lastResetReason = status?.diagnostics?.lastResetReason.orEmpty(),
+            uptimeSeconds = status?.diagnostics?.uptimeSeconds,
             wifiConnected = status?.wifiConnected,
             wifiSignalDbm = status?.wifiSignalDbm,
             temperatureUnit = status?.temperatureUnit ?: "celcius",
