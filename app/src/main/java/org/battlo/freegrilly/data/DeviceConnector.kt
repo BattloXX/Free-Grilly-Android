@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 import org.battlo.freegrilly.data.api.BaseUrlInterceptor
+import org.battlo.freegrilly.data.api.DeviceHost
 import org.battlo.freegrilly.data.api.GrillyApiService
 import org.battlo.freegrilly.data.api.models.DeviceInfo
 import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
@@ -49,8 +50,7 @@ class DeviceConnector @Inject constructor(
         if (device.ip == "demo" || device.uuid == "demo") return ConnectResult(success = true)
 
         // 1) Fast path: the last-known IP.
-        baseUrlInterceptor.currentHost.value = device.ip
-        if (tryDirectConnect(device.ip)) {
+        if (DeviceHost.isValid(device.ip) && tryDirectConnect(device.ip)) {
             Log.d(TAG, "Fast-path connect succeeded for ${device.name} at ${device.ip}")
             enrichAndSave(device)
             return ConnectResult(success = true)
@@ -60,7 +60,7 @@ class DeviceConnector @Inject constructor(
         //    OS, so it works even when the app's own NSD scan can't run. Cheap → try before NSD.
         val mdnsHost = device.mdnsHostname.takeIf { it.isNotBlank() }
             ?.let { if (it.endsWith(".local")) it else "$it.local" }
-        if (mdnsHost != null && tryDirectConnect(mdnsHost)) {
+        if (mdnsHost != null && DeviceHost.isValid(mdnsHost) && tryDirectConnect(mdnsHost)) {
             Log.d(TAG, "Hostname-path connect succeeded for ${device.name} at $mdnsHost")
             baseUrlInterceptor.currentHost.value = mdnsHost
             enrichAndSave(device.copy(ip = mdnsHost))
@@ -104,7 +104,9 @@ class DeviceConnector @Inject constructor(
      * Fetches /api/info to build a full [KnownDevice] record.
      */
     suspend fun connectByIp(ip: String): ConnectResult {
-        baseUrlInterceptor.currentHost.value = ip
+        val normalizedIp = DeviceHost.normalize(ip)
+            ?: return ConnectResult(false, "Ungültige IP-Adresse: $ip")
+        baseUrlInterceptor.currentHost.value = normalizedIp
         // 8 s timeout — must exceed OkHttp connectTimeout(5s). Capture the full response here so
         // we can use legacy fields (unique_id, firmware_version) for epiecs firmware that has no
         // /api/info endpoint.
@@ -112,7 +114,7 @@ class DeviceConnector @Inject constructor(
             runCatching { api.getGrillStatus() }.getOrNull()
         }
         if (status == null) {
-            return ConnectResult(success = false, errorMessage = "Keine Verbindung zu $ip möglich.")
+            return ConnectResult(success = false, errorMessage = "Keine Verbindung zu $normalizedIp möglich.")
         }
         // /api/info may not exist (epiecs firmware has no /api/info) — fall back to /api/grill fields
         val info = runCatching { api.getInfo() }.getOrNull()
@@ -120,18 +122,18 @@ class DeviceConnector @Inject constructor(
         val device = info?.let {
             persistDeviceFromInfo(
                 info = it,
-                ip = ip,
+                ip = normalizedIp,
                 fallback = KnownDevice(
-                    uuid = status.resolvedUuid.ifBlank { ip },
+                    uuid = status.resolvedUuid.ifBlank { normalizedIp },
                     name = status.name.ifBlank { "Grilleye" },
-                    ip = ip,
+                    ip = normalizedIp,
                     mdnsHostname = status.resolvedHostname,
                     firmwareVersion = status.resolvedFirmware,
                 ),
             )
         } ?: KnownDevice(
-            uuid = status.resolvedUuid.ifBlank { ip }, name = status.name.ifBlank { "Grilleye" },
-            ip = ip, mdnsHostname = status.resolvedHostname, firmwareVersion = status.resolvedFirmware,
+            uuid = status.resolvedUuid.ifBlank { normalizedIp }, name = status.name.ifBlank { "Grilleye" },
+            ip = normalizedIp, mdnsHostname = status.resolvedHostname, firmwareVersion = status.resolvedFirmware,
         ).also { persistDevice(it) }
         Log.d(TAG, "connectByIp: connected to ${device.name} caps=${device.capabilities}")
         return ConnectResult(success = true)

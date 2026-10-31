@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.windowsizeclass.ExperimentalMaterial3WindowSizeClassApi
 import androidx.compose.material3.windowsizeclass.calculateWindowSizeClass
@@ -11,7 +12,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.hilt.navigation.compose.hiltViewModel
 import android.content.pm.PackageManager
 import dagger.hilt.android.AndroidEntryPoint
 import org.battlo.freegrilly.ui.MainScreen
@@ -31,21 +31,27 @@ class MainActivity : AppCompatActivity() {
     private val requestPermissions =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { /* no-op */ }
 
+    private val mainViewModel: MainViewModel by viewModels()
+
     @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        // Keep the splash up until the start destination is known, so NavHost is built once
+        // with its final graph instead of briefly showing (and auto-scanning in) the selector.
+        installSplashScreen().setKeepOnScreenCondition { mainViewModel.startDestination.value == null }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestRuntimePermissions()
         setContent {
             FreeGrillyTheme {
                 val windowSizeClass = calculateWindowSizeClass(this)
-                val viewModel: MainViewModel = hiltViewModel()
-                val startDestination by viewModel.startDestination.collectAsState()
-                MainScreen(
-                    windowSizeClass = windowSizeClass,
-                    startDestination = startDestination,
-                )
+                val startDestination by mainViewModel.startDestination.collectAsState()
+                val destination = startDestination
+                if (destination != null) {
+                    MainScreen(
+                        windowSizeClass = windowSizeClass,
+                        startDestination = destination,
+                    )
+                }
             }
         }
     }

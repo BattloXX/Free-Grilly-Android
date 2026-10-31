@@ -158,7 +158,7 @@ class OnboardingViewModel @Inject constructor(
                             uuid = expectedUuid,
                             name = found.name,
                             ip = found.ip,
-                            mdnsHostname = found.name,
+                            mdnsHostname = "",
                         ),
                     )
                     _step.value = OnboardingStep.Complete
