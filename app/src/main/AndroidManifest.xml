@@ -25,9 +25,6 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
         tools:targetApi="34" />
 
-    <!-- Boot receiver -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
     <!-- In-app update: allow installing APKs from unknown sources -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
@@ -74,14 +71,6 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
-
-        <receiver
-            android:name=".receiver.BootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
 
         <receiver
             android:name=".receiver.AlarmMuteReceiver"

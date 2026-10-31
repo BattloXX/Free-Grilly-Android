@@ -13,17 +13,26 @@ class BaseUrlInterceptor @Inject constructor() : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val host = currentHost.value
-        val original = chain.request()
-        val newUrl = original.url.newBuilder().host(host).build()
-        val request = original.newBuilder().url(newUrl).build()
+        val request = try {
+            val original = chain.request()
+            val newUrl = original.url.newBuilder().host(host).build()
+            val request = original.newBuilder().url(newUrl).build()
 
-        // The grill only ever speaks plaintext HTTP, so this is the one place that can enforce
-        // "LAN only": Android's network security config can't express an IP-range allowlist for
-        // a DHCP-assigned address, so the OS-level cleartext permission stays broad. This check
-        // is the real gate — it refuses to send cleartext to anything but a private/link-local
-        // host, even if currentHost was ever set to something unexpected.
-        if (request.url.scheme == "http" && !isPrivateOrLocalHost(request.url.host)) {
-            throw IOException("Refusing cleartext HTTP request to non-local host: ${request.url.host}")
+            // The grill only ever speaks plaintext HTTP, so this is the one place that can enforce
+            // "LAN only": Android's network security config can't express an IP-range allowlist for
+            // a DHCP-assigned address, so the OS-level cleartext permission stays broad. This check
+            // is the real gate — it refuses to send cleartext to anything but a private/link-local
+            // host, even if currentHost was ever set to something unexpected.
+            if (request.url.scheme == "http" && !isPrivateOrLocalHost(request.url.host)) {
+                throw IOException("Refusing cleartext HTTP request to non-local host: ${request.url.host}")
+            }
+            request
+        } catch (e: IllegalArgumentException) {
+            throw IOException("Invalid device host: $host", e)
+        } catch (e: IOException) {
+            throw e
+        } catch (e: Exception) {
+            throw IOException("Failed to prepare device request", e)
         }
 
         return chain.proceed(request)

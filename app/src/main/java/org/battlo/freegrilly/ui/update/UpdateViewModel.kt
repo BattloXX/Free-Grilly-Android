@@ -52,28 +52,49 @@ class UpdateViewModel @Inject constructor(
     fun startDownload(info: UpdateInfo) {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val filename = "free-grilly-${info.version}.apk"
-        val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
-            .setTitle("Free-Grilly ${info.version}")
-            .setDescription("Update wird heruntergeladen…")
-            .setMimeType("application/vnd.android.package-archive")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, filename)
-        val downloadId = dm.enqueue(request)
+        val downloadId = runCatching {
+            val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
+                .setTitle("Free-Grilly ${info.version}")
+                .setDescription("Update wird heruntergeladen…")
+                .setMimeType("application/vnd.android.package-archive")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_DOWNLOADS, filename)
+            dm.enqueue(request)
+        }.getOrElse {
+            _state.value = UpdateState.Error("Download konnte nicht gestartet werden.")
+            return
+        }
         _state.value = UpdateState.Downloading(0, info)
         pollDownload(dm, downloadId, info)
     }
 
     private fun pollDownload(dm: DownloadManager, downloadId: Long, info: UpdateInfo) {
         viewModelScope.launch(Dispatchers.IO) {
+            var emptyQueries = 0
             while (true) {
-                val query = DownloadManager.Query().setFilterById(downloadId)
-                val cursor = dm.query(query)
-                if (!cursor.moveToFirst()) { cursor.close(); delay(500); continue }
-
-                val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
-                val done = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
-                cursor.close()
+                val snapshot = runCatching {
+                    dm.query(DownloadManager.Query().setFilterById(downloadId))?.use { cursor ->
+                        if (!cursor.moveToFirst()) return@use null
+                        Triple(
+                            cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)),
+                            cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),
+                            cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)),
+                        )
+                    }
+                }.getOrElse {
+                    _state.value = UpdateState.Error("Download konnte nicht abgefragt werden.")
+                    return@launch
+                }
+                if (snapshot == null) {
+                    if (++emptyQueries >= 10) {
+                        _state.value = UpdateState.Error("Download nicht gefunden.")
+                        return@launch
+                    }
+                    delay(500)
+                    continue
+                }
+                emptyQueries = 0
+                val (status, done, total) = snapshot
 
                 when (status) {
                     DownloadManager.STATUS_SUCCESSFUL -> {

@@ -9,6 +9,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.battlo.freegrilly.BuildConfig
 import org.battlo.freegrilly.data.api.BaseUrlInterceptor
 import org.battlo.freegrilly.data.api.GrillyApiService
 import retrofit2.Retrofit
@@ -33,7 +34,7 @@ object NetworkModule {
             .addInterceptor(interceptor)
             .addInterceptor(HttpLoggingInterceptor().apply {
                 redactHeader("Authorization")
-                level = HttpLoggingInterceptor.Level.BASIC
+                level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC else HttpLoggingInterceptor.Level.NONE
             })
             .connectTimeout(5, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.SECONDS)

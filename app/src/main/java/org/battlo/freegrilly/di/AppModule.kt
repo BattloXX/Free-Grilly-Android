@@ -1,10 +1,12 @@
 package org.battlo.freegrilly.di
 
+import android.util.Log
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Qualifier
@@ -20,6 +22,10 @@ object AppModule {
     @Provides
     @Singleton
     @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    fun provideApplicationScope(): CoroutineScope {
+        val handler = CoroutineExceptionHandler { _, exception ->
+            Log.e("FreeGrilly", "Unexpected application coroutine failure", exception)
+        }
+        return CoroutineScope(SupervisorJob() + Dispatchers.Default + handler)
+    }
 }

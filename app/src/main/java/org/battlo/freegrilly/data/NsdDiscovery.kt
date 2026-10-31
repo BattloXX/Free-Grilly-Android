@@ -13,6 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -90,16 +91,19 @@ class NsdDiscovery @Inject constructor(
      * @param targetUuid       If non-null, only `Found` emits for this specific device UUID.
      */
     fun startDiscovery(includeOriginal: Boolean = true, targetUuid: String? = null) {
+        releaseDiscoveryResources()
         _state.value = DiscoveryState.Searching
         val generation = ++scanGeneration
 
         // Acquire multicast lock so mDNS packets are not filtered by the Wi-Fi driver.
         // Requires CHANGE_WIFI_MULTICAST_STATE permission in the manifest.
-        val wifiMgr = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        multicastLock = wifiMgr.createMulticastLock("GrillyNsd").also {
-            it.setReferenceCounted(false)
-            it.acquire()
-        }
+        runCatching {
+            val wifiMgr = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            multicastLock = wifiMgr.createMulticastLock("GrillyNsd").also {
+                it.setReferenceCounted(false)
+                it.acquire()
+            }
+        }.onFailure { Log.w(TAG, "Multicast lock acquisition failed: $it") }
 
         val mgr = (context.getSystemService(Context.NSD_SERVICE) as NsdManager).also { nsdManager = it }
 
@@ -125,6 +129,12 @@ class NsdDiscovery @Inject constructor(
     }
 
     fun stopDiscovery() {
+        releaseDiscoveryResources()
+        _state.value = DiscoveryState.Idle
+        _discoveredDevices.value = emptyList()
+    }
+
+    private fun releaseDiscoveryResources() {
         ++scanGeneration // Ignore a request that finishes after its scan is stopped.
         runCatching { freeGrillyListener?.let { nsdManager?.stopServiceDiscovery(it) } }
         runCatching { grillyPlusListener?.let { nsdManager?.stopServiceDiscovery(it) } }
@@ -138,8 +148,6 @@ class NsdDiscovery @Inject constructor(
             resolveJobs.forEach { it.cancel() }
             resolveJobs.clear()
         }
-        _state.value = DiscoveryState.Idle
-        _discoveredDevices.value = emptyList()
         // Release multicast lock when scanning stops.
         runCatching { multicastLock?.release() }
         multicastLock = null
@@ -158,6 +166,7 @@ class NsdDiscovery @Inject constructor(
         }
 
         override fun onServiceFound(service: NsdServiceInfo) {
+            if (generation != scanGeneration) return
             if (legacy) {
                 val n = service.serviceName ?: ""
                 val isGrilleye = n.contains("grilleye", ignoreCase = true) ||
@@ -165,17 +174,22 @@ class NsdDiscovery @Inject constructor(
                         n.contains("freegrilly", ignoreCase = true)
                 if (!isGrilleye) return
             }
-            mgr.resolveService(service, makeResolveListener(legacy, grillyPlus, targetUuid, generation))
+            runCatching {
+                mgr.resolveService(service, makeResolveListener(legacy, grillyPlus, targetUuid, generation))
+            }.onFailure { Log.w(TAG, "Service resolution failed: $it") }
         }
 
         override fun onServiceLost(service: NsdServiceInfo) {
+            if (generation != scanGeneration) return
             // Do not remove a newer confirmation of the same UUID from another service type.
             val variant = if (legacy) "original" else if (grillyPlus) "grilly_plus" else "free_grilly"
-            _discoveredDevices.value = _discoveredDevices.value
-                .filterNot { it.name == service.serviceName && it.serviceType == variant }
+            _discoveredDevices.update { devices ->
+                devices.filterNot { it.name == service.serviceName && it.serviceType == variant }
+            }
         }
         override fun onDiscoveryStopped(serviceType: String) {}
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
+            if (generation != scanGeneration) return
             if (!legacy) _state.value = DiscoveryState.Failed
         }
         override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {}
@@ -191,6 +205,7 @@ class NsdDiscovery @Inject constructor(
             Log.w(TAG, "Resolve failed code=$code")
         }
         override fun onServiceResolved(si: NsdServiceInfo) {
+            if (generation != scanGeneration) return
             // Prefer IPv4: hostAddress may return a scoped IPv6 link-local address (e.g.
             // "fe80::c2f1:abcd%wlan0") which OkHttp cannot use as an HTTP host. Strip the
             // scope suffix; if what remains still looks IPv6 (contains ':'), skip this
@@ -219,7 +234,7 @@ class NsdDiscovery @Inject constructor(
                 }
                 _state.value = DiscoveryState.Found(ip, name, uuid, variant)
                 val discovered = DiscoveredDevice(ip, name, uuid, variant)
-                _discoveredDevices.value = DiscoveryDedupe.upsert(_discoveredDevices.value, discovered)
+                _discoveredDevices.update { DiscoveryDedupe.upsert(it, discovered) }
             }
             synchronized(resolveJobs) { resolveJobs += job }
         }

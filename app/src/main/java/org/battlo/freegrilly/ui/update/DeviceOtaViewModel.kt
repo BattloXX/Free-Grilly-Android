@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
@@ -82,19 +84,24 @@ class DeviceOtaViewModel @Inject constructor(
 
     fun downloadFirmware(info: DeviceFirmwareInfo) {
         val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val destFile = File(
-            context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-            "firmware-${info.version}.bin",
-        )
-        if (destFile.exists()) destFile.delete()
+        val (destFile, downloadId) = runCatching {
+            val destFile = File(
+                context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                "firmware-${info.version}.bin",
+            )
+            if (destFile.exists()) destFile.delete()
 
-        val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
-            .setTitle("Firmware ${info.version}")
-            .setDescription("Free-Grilly Firmware-Update")
-            .setDestinationUri(Uri.fromFile(destFile))
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
+            val request = DownloadManager.Request(Uri.parse(info.downloadUrl))
+                .setTitle("Firmware ${info.version}")
+                .setDescription("Free-Grilly Firmware-Update")
+                .setDestinationUri(Uri.fromFile(destFile))
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
 
-        val downloadId = dm.enqueue(request)
+            destFile to dm.enqueue(request)
+        }.getOrElse {
+            _state.value = OtaState.Error("Firmware-Download konnte nicht gestartet werden.")
+            return
+        }
         _state.value = OtaState.Downloading(0, info)
 
         viewModelScope.launch {
@@ -108,20 +115,33 @@ class DeviceOtaViewModel @Inject constructor(
         info: DeviceFirmwareInfo,
         destFile: File,
     ) {
+        var emptyQueries = 0
         while (true) {
-            val cursor = dm.query(DownloadManager.Query().setFilterById(downloadId))
-            if (cursor == null || !cursor.moveToFirst()) {
+            val snapshot = withContext(Dispatchers.IO) {
+                runCatching {
+                    dm.query(DownloadManager.Query().setFilterById(downloadId))?.use { cursor ->
+                        if (!cursor.moveToFirst()) return@use null
+                        Triple(
+                            cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)),
+                            cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)),
+                            cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)),
+                        )
+                    }
+                }
+            }.getOrElse {
+                _state.value = OtaState.Error("Firmware-Download konnte nicht abgefragt werden.")
+                return
+            }
+            if (snapshot == null) {
+                if (++emptyQueries >= 10) {
+                    _state.value = OtaState.Error("Firmware-Download nicht gefunden.")
+                    return
+                }
                 delay(500)
                 continue
             }
-            val statusCol = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
-            val downloadedCol = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-            val totalCol = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-
-            val status = cursor.getInt(statusCol)
-            val downloaded = cursor.getLong(downloadedCol)
-            val total = cursor.getLong(totalCol)
-            cursor.close()
+            emptyQueries = 0
+            val (status, downloaded, total) = snapshot
 
             when (status) {
                 DownloadManager.STATUS_RUNNING, DownloadManager.STATUS_PENDING -> {

@@ -3,6 +3,8 @@ package org.battlo.freegrilly.data
 import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.battlo.freegrilly.data.device.GrillyDeviceApiHolder
 import org.battlo.freegrilly.data.device.model.GrillState
 import org.battlo.freegrilly.data.device.model.Probe
@@ -39,11 +41,12 @@ class GrillyRepository @Inject constructor(
 
     // Durable history (Room): one sample per connected probe every PERSIST_INTERVAL_MS, tied
     // to a cook session. Decoupled from the 1-s poll to bound DB growth and write load.
-    private var currentSessionId: Long? = null
-    private var currentFirmwareSessionId: String? = null
+    private val sessionMutex = Mutex()
+    @Volatile private var currentSessionId: Long? = null
+    @Volatile private var currentFirmwareSessionId: String? = null
     private val _sessionIdFlow = MutableStateFlow<Long?>(null)
     val sessionIdFlow: StateFlow<Long?> = _sessionIdFlow.asStateFlow()
-    private var lastPersistMs = 0L
+    @Volatile private var lastPersistMs = 0L
     private val PERSIST_INTERVAL_MS = 10_000L
     // Resume the previous session (= same cook) instead of starting a new one if its last
     // sample is recent — so a cook survives app restarts and device reboots.
@@ -88,9 +91,11 @@ class GrillyRepository @Inject constructor(
                     appendAndPersist(status)
                     _statusFlow.value = GrillyUiState.Connected(
                         status = status,
-                        history = historyBuffers.mapValues { it.value.toList() },
+                        history = synchronized(historyBuffers) { historyBuffers.mapValues { it.value.toList() } },
                     )
                     alarmController.onAlarmStateChanged(status.alarmActive, status.probes, status.temperatureUnit)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (_: Exception) {
                     // A single miss is expected under multi-device contention — only flip to
                     // Disconnected after several consecutive failures (see MAX_POLL_FAILURES).
@@ -131,70 +136,80 @@ class GrillyRepository @Inject constructor(
      * (so a cook continues across app restarts / device reboots), otherwise creating a new one.
      * Returns (sessionId, isNew).
      */
-    private suspend fun ensureSession(firmwareSessionId: String? = null): Pair<Long, Boolean> {
-        if (currentSessionId != null && currentFirmwareSessionId == firmwareSessionId) {
-            return currentSessionId!! to false
+    private suspend fun ensureSession(firmwareSessionId: String? = null): Pair<Long, Boolean> = sessionMutex.withLock {
+        val sessionId = currentSessionId
+        val previousFirmwareSessionId = currentFirmwareSessionId
+        if (sessionId != null && previousFirmwareSessionId == firmwareSessionId) {
+            return@withLock sessionId to false
         }
-        val deviceId = runCatching { deviceStore.selectedDeviceUuid.first() }.getOrNull() ?: "default"
+        val deviceId = runCatching { deviceStore.selectedDeviceUuid.first() }.onFailure { if (it is CancellationException) throw it }.getOrNull() ?: "default"
         val now = System.currentTimeMillis()
-        val latest = runCatching { historyDao.latestSession(deviceId) }.getOrNull()
+        val latest = runCatching { historyDao.latestSession(deviceId) }.onFailure { if (it is CancellationException) throw it }.getOrNull()
         val resume = latest != null &&
-            (runCatching { historyDao.lastSampleTs(latest.id) }.getOrNull()
+            (runCatching { historyDao.lastSampleTs(latest.id) }.onFailure { if (it is CancellationException) throw it }.getOrNull()
                 ?.let { now - it < SESSION_RESUME_GAP_MS } ?: false)
         val existingFirmware = firmwareSessionId?.let {
-            runCatching { historyDao.latestFirmwareSession(deviceId, it) }.getOrNull()
+            runCatching { historyDao.latestFirmwareSession(deviceId, it) }.onFailure { if (it is CancellationException) throw it }.getOrNull()
         }
         val decision = decideSession(
-            currentSessionId, currentFirmwareSessionId, firmwareSessionId,
+            sessionId, previousFirmwareSessionId, firmwareSessionId,
             existingFirmware?.id, resume,
         )
-        if (decision.closeCurrent) currentSessionId?.let { runCatching { historyDao.closeSession(it, now) } }
+        if (decision.closeCurrent) sessionId?.let { runCatching { historyDao.closeSession(it, now) }.onFailure { if (it is CancellationException) throw it } }
         val id = when (decision.action) {
-            SessionAction.KEEP_CURRENT -> currentSessionId ?: -1L
+            SessionAction.KEEP_CURRENT -> sessionId ?: -1L
             SessionAction.RESUME_EXISTING -> (existingFirmware ?: latest)?.id ?: -1L
             SessionAction.CREATE_NEW -> runCatching {
                 historyDao.insertSession(CookSessionEntity(
                     deviceId = deviceId, firmwareSessionId = firmwareSessionId, startedAt = now,
                 ))
-            }.getOrDefault(-1L)
+            }.onFailure { if (it is CancellationException) throw it }.getOrDefault(-1L)
         }
         currentSessionId = id
         // A missing optional field must not erase a previously seen firmware id: if it returns
         // on a later poll we still need to detect a true id transition.
         if (firmwareSessionId != null) currentFirmwareSessionId = firmwareSessionId
         _sessionIdFlow.value = id.takeIf { it >= 0 }
-        return id to (decision.action == SessionAction.CREATE_NEW)
+        id to (decision.action == SessionAction.CREATE_NEW)
     }
 
     suspend fun seedHistory() {
-        // Obtain an optional firmware cook id before assigning imported samples. Current
-        // firmware does not expose it, so this safely falls back to the legacy policy.
-        val status = runCatching { deviceApiHolder.api.status() }.getOrNull()
-        val (sessionId, isNew) = ensureSession(status?.cookSessionId)
+        try {
+            // Obtain an optional firmware cook id before assigning imported samples. Current
+            // firmware does not expose it, so this safely falls back to the legacy policy.
+            val status = runCatching { deviceApiHolder.api.status() }.onFailure { if (it is CancellationException) throw it }.getOrNull()
+            val (sessionId, isNew) = ensureSession(status?.cookSessionId)
 
-        if (!activeCapabilities.supports(Capabilities.HISTORY)) return
-        val series = runCatching { deviceApiHolder.api.history() }.getOrNull() ?: return
-        series.filter { it.tier == org.battlo.freegrilly.data.device.model.HistoryTier.FINE }.forEach { item ->
-            val buffer = historyBuffers.getOrPut(item.probeId) { ArrayDeque(bufferCapacity) }
-            buffer.clear()
-            item.points.forEach { point -> if (buffer.size >= bufferCapacity) buffer.removeFirst(); buffer.addLast(point.temperatureC) }
+            if (!activeCapabilities.supports(Capabilities.HISTORY)) return
+            val series = runCatching { deviceApiHolder.api.history() }.onFailure { if (it is CancellationException) throw it }.getOrNull() ?: return
+            synchronized(historyBuffers) {
+                series.filter { it.tier == org.battlo.freegrilly.data.device.model.HistoryTier.FINE }.forEach { item ->
+                    val buffer = historyBuffers.getOrPut(item.probeId) { ArrayDeque(bufferCapacity) }
+                    buffer.clear()
+                    item.points.forEach { point -> if (buffer.size >= bufferCapacity) buffer.removeFirst(); buffer.addLast(point.temperatureC) }
+                }
+            }
+            // Free-Grilly reconstructs timestamps relative to the request time, so importing an
+            // existing session would create shifted duplicates. Grilly+ has stable tier timestamps.
+            if (sessionId < 0 || (!isNew && !deviceApiHolder.api.supportsHistoryGapFill)) return
+            // On a resumed cook only fill the gap after the last stored sample: tier timestamps are
+            // derived from request time, so re-importing older points would add jittered near-duplicates.
+            val gapStart = if (isNew) Long.MIN_VALUE
+                else runCatching { historyDao.lastSampleTs(sessionId) }.onFailure { if (it is CancellationException) throw it }.getOrNull() ?: Long.MIN_VALUE
+            val samples = mergeHistorySeries(series).filter { (_, point) -> point.timestampMs > gapStart }.map { (probeId, point) ->
+                TempSampleEntity(
+                    sessionId = sessionId,
+                    probeId = probeId,
+                    tsMs = point.timestampMs,
+                    tempCx10 = (point.temperatureC * 10).roundToInt(),
+                )
+            }
+            if (samples.isNotEmpty()) runCatching { historyDao.insertSamples(samples) }.onFailure { if (it is CancellationException) throw it }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not seed history", e)
         }
-        // Free-Grilly reconstructs timestamps relative to the request time, so importing an
-        // existing session would create shifted duplicates. Grilly+ has stable tier timestamps.
-        if (sessionId < 0 || (!isNew && !deviceApiHolder.api.supportsHistoryGapFill)) return
-        // On a resumed cook only fill the gap after the last stored sample: tier timestamps are
-        // derived from request time, so re-importing older points would add jittered near-duplicates.
-        val gapStart = if (isNew) Long.MIN_VALUE
-            else runCatching { historyDao.lastSampleTs(sessionId) }.getOrNull() ?: Long.MIN_VALUE
-        val samples = mergeHistorySeries(series).filter { (_, point) -> point.timestampMs > gapStart }.map { (probeId, point) ->
-            TempSampleEntity(
-                sessionId = sessionId,
-                probeId = probeId,
-                tsMs = point.timestampMs,
-                tempCx10 = (point.temperatureC * 10).roundToInt(),
-            )
-        }
-        if (samples.isNotEmpty()) runCatching { historyDao.insertSamples(samples) }
     }
 
     private suspend fun appendAndPersist(status: GrillState) {
@@ -204,10 +219,12 @@ class GrillyRepository @Inject constructor(
         ensureSession(status.cookSessionId)
 
         // RAM (every update) for the live cards.
-        status.probes.filter { it.connected }.forEach { probe ->
-            val buf = historyBuffers.getOrPut(probe.resolvedId) { ArrayDeque(bufferCapacity) }
-            if (buf.size >= bufferCapacity) buf.removeFirst()
-            buf.addLast(probe.resolvedTemperature)
+        synchronized(historyBuffers) {
+            status.probes.filter { it.connected }.forEach { probe ->
+                val buf = historyBuffers.getOrPut(probe.resolvedId) { ArrayDeque(bufferCapacity) }
+                if (buf.size >= bufferCapacity) buf.removeFirst()
+                buf.addLast(probe.resolvedTemperature)
+            }
         }
 
         // Room (throttled) for the durable detail / whole-cook view.
@@ -229,7 +246,7 @@ class GrillyRepository @Inject constructor(
     }
 
     fun getHistoryForProbe(probeId: Int): List<Float> =
-        historyBuffers[probeId]?.toList() ?: emptyList()
+        synchronized(historyBuffers) { historyBuffers[probeId]?.toList() ?: emptyList() }
 
     /** Live, time-stamped samples for the current session's probe (whole session). */
     fun observeSamples(probeId: Int): Flow<List<TempSample>> =
