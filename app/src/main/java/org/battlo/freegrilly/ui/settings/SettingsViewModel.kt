@@ -9,17 +9,27 @@ import org.battlo.freegrilly.data.Capabilities
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.hasFlag
+import org.battlo.freegrilly.service.MonitoringController
 import org.battlo.freegrilly.util.LocaleHelper
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val deviceStore: DeviceStore,
+    private val monitoringController: MonitoringController,
     private val repository: GrillyRepository,
 ) : ViewModel() {
 
     val unit: StateFlow<String> = deviceStore.temperatureUnit
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "celcius")
+
+    val backgroundMonitoring: StateFlow<Boolean> = deviceStore.backgroundMonitoring
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    fun setBackgroundMonitoring(enabled: Boolean) = viewModelScope.launch {
+        deviceStore.setBackgroundMonitoring(enabled)
+        if (!enabled) monitoringController.stop()
+    }
 
     val language: StateFlow<String> = deviceStore.appLanguage
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "system")

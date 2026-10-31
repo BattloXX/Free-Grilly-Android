@@ -19,6 +19,7 @@ import org.battlo.freegrilly.data.history.TempSample
 import org.battlo.freegrilly.data.history.TempSampleEntity
 import org.battlo.freegrilly.di.ApplicationScope
 import org.battlo.freegrilly.domain.AlarmController
+import org.battlo.freegrilly.service.MonitoringController
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -30,6 +31,7 @@ class GrillyRepository @Inject constructor(
     private val alarmController: AlarmController,
     private val historyDao: HistoryDao,
     private val deviceStore: DeviceStore,
+    private val monitoringController: MonitoringController,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     suspend fun selectedDeviceUuid(): String? = deviceStore.selectedDeviceUuid.first()
@@ -81,8 +83,7 @@ class GrillyRepository @Inject constructor(
     fun startPolling() {
         if (pollingJob?.isActive == true) return
         pollingJob = scope.launch {
-            // Default: 1-second polling (original firmware or SSE stream ended).
-            Log.d(TAG, "Starting 1-second polling loop")
+            Log.d(TAG, "Starting polling loop")
             var consecutiveFailures = 0
             while (isActive) {
                 try {
@@ -106,7 +107,7 @@ class GrillyRepository @Inject constructor(
                         _statusFlow.value = GrillyUiState.Disconnected
                     }
                 }
-                delay(1_000)
+                delay(if (monitoringController.appVisible) 1_000 else 5_000)
             }
         }
     }

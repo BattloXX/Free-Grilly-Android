@@ -28,6 +28,7 @@ Native Android-App für das **Free-Grilly** Grillthermometer (BattloXX-Fork der 
 - **Live-Temperaturen** aller bis zu 8 Sonden (1-Sekunden-Polling)
 - **Verlaufs-Graph** (Compose Canvas) mit lokal gespeicherter Historie; bei Grilly+ werden feine und grobe Verlaufsstufe beim Verbinden geladen und zusammengeführt, sodass auch mehrstündige Cooks nach dem Schließen der App ihren Graphen behalten
 - **Alarm-Benachrichtigungen** pro Sonde nach dem Alarmzustand der Firmware (auch im Hintergrund), mit den Aktionen **Stumm** und **Öffnen**
+- **Hintergrundüberwachung** (abschaltbar): Foreground-Service mit Live-Temperaturen in der Benachrichtigung, läuft auch bei geschlossener App bzw. Bildschirm aus weiter (5-s-Polling) und endet automatisch nach 30 min ohne Verbindung oder Sonde
 - **Einrichtungs-Assistent** (AP-Provisioning + WLAN-Konfiguration), erkennt die Firmware über `/api/info` (AP-Namen `FreeGrilly_…`, `GrillyPlus_…`, `Grilleye…`) und wartet nach dem Setup begrenzt auf das Gerät im Heim-WLAN
 - **Grillgut-Bibliothek** mit kuratierten Kerntemperaturen (Rind, Schwein, Geflügel, Fisch, Lamm, Wild)
 - **Smartphone & Tablet** – adaptives Layout (BottomBar / NavigationRail)
@@ -103,6 +104,7 @@ Native Android app for the **Free-Grilly** grill thermometer (BattloXX fork of t
 - **Live temperatures** for up to 8 probes (1-second polling)
 - **History graph** (Compose Canvas) with locally persisted history; on Grilly+ the fine and coarse history tiers are loaded and merged on connect, so multi-hour cooks keep their graph after the app was closed
 - **Alarm notifications** per probe based on the firmware's alarm state (including in the background), with **Mute** and **Open** actions
+- **Background monitoring** (can be turned off): foreground service with live temperatures in its notification, keeps running with the app closed or the screen off (5-s polling) and stops automatically after 30 min without a connection or probe
 - **Setup wizard** (AP provisioning + Wi-Fi configuration) that detects the firmware via `/api/info` (AP names `FreeGrilly_…`, `GrillyPlus_…`, `Grilleye…`) and waits a bounded time for the device on your home Wi-Fi
 - **Food library** with curated target temperatures (beef, pork, poultry, fish, lamb, game)
 - **Phone & Tablet** – adaptive layout (BottomBar / NavigationRail)

@@ -15,8 +15,8 @@ android {
         applicationId = "org.battlo.freegrilly"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "0.0.18"
+        versionCode = 19
+        versionName = "0.0.19"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GITHUB_OWNER", "\"BattloXX\"")
         buildConfigField("String", "GITHUB_REPO", "\"Free-Grilly-Android\"")
@@ -72,6 +72,7 @@ dependencies {
     implementation(libs.core.splashscreen)
     implementation(libs.appcompat)
     implementation(libs.activity.compose)
+    implementation(libs.lifecycle.process)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
