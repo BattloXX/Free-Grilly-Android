@@ -1,5 +1,6 @@
 package org.battlo.freegrilly.domain
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,6 +13,7 @@ import org.battlo.freegrilly.MainActivity
 import org.battlo.freegrilly.R
 import org.battlo.freegrilly.data.device.model.Probe
 import org.battlo.freegrilly.receiver.AlarmMuteReceiver
+import org.battlo.freegrilly.service.GrillyForegroundService
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,6 +22,7 @@ class AlarmController @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     companion object {
+        const val MONITOR_CHANNEL_ID = "grilly_monitor"
         const val CHANNEL_ID = "grilly_alarm"
         const val NOTIFICATION_ID_BASE = 1001
         const val FOREGROUND_NOTIFICATION_ID = 1000
@@ -40,6 +43,16 @@ class AlarmController @Inject constructor(
             enableVibration(true)
         }
         notificationManager.createNotificationChannel(channel)
+        val monitorChannel = NotificationChannel(
+            MONITOR_CHANNEL_ID,
+            context.getString(R.string.monitor_channel_name),
+            NotificationManager.IMPORTANCE_LOW,
+        ).apply {
+            description = context.getString(R.string.monitor_channel_description)
+            setSound(null, null)
+            enableVibration(false)
+        }
+        notificationManager.createNotificationChannel(monitorChannel)
     }
 
     /** Applies the firmware's alarm state; it never infers an alarm from temperatures locally. */
@@ -94,12 +107,30 @@ class AlarmController @Inject constructor(
 
     private fun notificationId(probeId: Int) = NOTIFICATION_ID_BASE + probeId
 
-    fun buildForegroundNotification() =
-        NotificationCompat.Builder(context, CHANNEL_ID)
+    fun buildForegroundNotification(text: String? = null): Notification {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pi = PendingIntent.getActivity(
+            context, FOREGROUND_NOTIFICATION_ID, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val stopIntent = Intent(context, GrillyForegroundService::class.java).apply {
+            action = GrillyForegroundService.ACTION_STOP
+        }
+        val stopPi = PendingIntent.getService(
+            context, FOREGROUND_NOTIFICATION_ID, stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        return NotificationCompat.Builder(context, MONITOR_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_thermometer)
             .setContentTitle(context.getString(R.string.foreground_notification_title))
-            .setContentText(context.getString(R.string.foreground_notification_text))
+            .setContentText(text ?: context.getString(R.string.foreground_notification_text))
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(pi)
+            .addAction(R.drawable.ic_thermometer, context.getString(R.string.monitor_action_stop), stopPi)
+            .setOnlyAlertOnce(true)
             .setOngoing(true)
             .build()
+    }
 }

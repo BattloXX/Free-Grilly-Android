@@ -28,6 +28,7 @@ class DeviceStore @Inject constructor(
         val KEY_KNOWN_DEVICES = stringPreferencesKey("known_devices_json")
         val KEY_UNIT = stringPreferencesKey("temperature_unit")
         val KEY_LANGUAGE = stringPreferencesKey("app_language")
+        val KEY_BACKGROUND_MONITORING = booleanPreferencesKey("background_monitoring")
         val KEY_DEMO_MODE = booleanPreferencesKey("is_demo_mode")
     }
 
@@ -50,6 +51,10 @@ class DeviceStore @Inject constructor(
     val isDemoMode: Flow<Boolean> = dataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
         .map { it[KEY_DEMO_MODE] ?: false }
+
+    val backgroundMonitoring: Flow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[KEY_BACKGROUND_MONITORING] ?: true }
 
     val knownDevices: Flow<List<KnownDevice>> = dataStore.data
         .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
@@ -91,5 +96,6 @@ class DeviceStore @Inject constructor(
 
     suspend fun setTemperatureUnit(unit: String) = dataStore.edit { it[KEY_UNIT] = unit }
     suspend fun setAppLanguage(lang: String) = dataStore.edit { it[KEY_LANGUAGE] = lang }
+    suspend fun setBackgroundMonitoring(enabled: Boolean) = dataStore.edit { it[KEY_BACKGROUND_MONITORING] = enabled }
     suspend fun setDemoMode(enabled: Boolean) = dataStore.edit { it[KEY_DEMO_MODE] = enabled }
 }

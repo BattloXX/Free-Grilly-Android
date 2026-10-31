@@ -27,6 +27,7 @@ fun SettingsScreen(
     updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val unit by viewModel.unit.collectAsStateWithLifecycle()
+    val backgroundMonitoring by viewModel.backgroundMonitoring.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val isDemoMode by viewModel.isDemoMode.collectAsStateWithLifecycle()
     val updateState by updateViewModel.state.collectAsStateWithLifecycle()
@@ -110,6 +111,23 @@ fun SettingsScreen(
                     }
                 }
             } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_background_monitoring))
+                        Text(
+                            stringResource(R.string.settings_background_monitoring_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = backgroundMonitoring,
+                        onCheckedChange = { viewModel.setBackgroundMonitoring(it) },
+                    )
+                }
                 OutlinedButton(
                     onClick = onNavigateToStatus,
                     modifier = Modifier.fillMaxWidth(),

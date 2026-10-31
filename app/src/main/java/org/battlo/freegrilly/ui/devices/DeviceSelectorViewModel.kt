@@ -17,11 +17,13 @@ import org.battlo.freegrilly.data.DiscoveryState
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.KnownDevice
 import org.battlo.freegrilly.data.NsdDiscovery
+import org.battlo.freegrilly.service.MonitoringController
 import javax.inject.Inject
 
 @HiltViewModel
 class DeviceSelectorViewModel @Inject constructor(
     private val deviceStore: DeviceStore,
+    private val monitoringController: MonitoringController,
     private val repository: GrillyRepository,
     private val deviceConnector: DeviceConnector,
     private val nsdDiscovery: NsdDiscovery,
@@ -87,6 +89,7 @@ class DeviceSelectorViewModel @Inject constructor(
      * and connects to [device]. Can be called from the Dashboard's device-switcher action.
      */
     fun switchToDevice(device: KnownDevice, onSuccess: () -> Unit) {
+        monitoringController.stop()
         repository.stopPolling()
         viewModelScope.launch {
             deviceStore.clearSelectedDevice()

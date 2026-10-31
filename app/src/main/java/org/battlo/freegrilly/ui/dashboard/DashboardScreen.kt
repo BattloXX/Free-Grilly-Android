@@ -14,6 +14,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.battlo.freegrilly.R
 import org.battlo.freegrilly.data.GrillyUiState
@@ -30,6 +32,8 @@ fun DashboardScreen(
     onNavigateToDeviceSelector: (() -> Unit)? = null,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.resumePolling() }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val unit by viewModel.unit.collectAsStateWithLifecycle()
 

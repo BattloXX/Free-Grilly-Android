@@ -9,12 +9,14 @@ import org.battlo.freegrilly.data.DeviceConnector
 import org.battlo.freegrilly.data.DeviceStore
 import org.battlo.freegrilly.data.GrillyRepository
 import org.battlo.freegrilly.data.GrillyUiState
+import org.battlo.freegrilly.service.MonitoringController
 import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val repository: GrillyRepository,
     private val deviceStore: DeviceStore,
+    private val monitoringController: MonitoringController,
     private val deviceConnector: DeviceConnector,
 ) : ViewModel() {
 
@@ -31,6 +33,7 @@ class DashboardViewModel @Inject constructor(
                 } else {
                     repository.seedHistory()
                     repository.startPolling()
+                    if (deviceStore.backgroundMonitoring.first()) monitoringController.start()
                 }
             }
         }
@@ -60,15 +63,21 @@ class DashboardViewModel @Inject constructor(
         }
         repository.seedHistory()
         repository.startPolling()
+        if (deviceStore.backgroundMonitoring.first()) monitoringController.start()
     }
 
     fun enableDemoMode() = viewModelScope.launch {
+        monitoringController.stop()
         deviceStore.setDemoMode(true)
         repository.setDemoMode()
     }
 
+    fun resumePolling() = viewModelScope.launch {
+        if (!deviceStore.isDemoMode.first()) repository.startPolling()
+    }
+
     override fun onCleared() {
         super.onCleared()
-        repository.stopPolling()
+        if (!monitoringController.isRunning.value) repository.stopPolling()
     }
 }
